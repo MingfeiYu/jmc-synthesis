@@ -1,0 +1,21 @@
+# Build artifacts
+mockturtle/build/
+mockturtle/.git/
+
+# MP-SPDZ compiled output and downloaded dependencies
+MP-SPDZ/.git/
+MP-SPDZ/deps/
+MP-SPDZ/local/
+MP-SPDZ/*.x
+MP-SPDZ/*.o
+MP-SPDZ/*.a
+MP-SPDZ/*.so
+MP-SPDZ/libSPDZ.so
+MP-SPDZ/Player-Data/
+MP-SPDZ/Programs/Bytecode/
+MP-SPDZ/Programs/Schedules/
+MP-SPDZ/Programs/Public-Input/
+MP-SPDZ/logs/
+
+# macOS noise
+**/.DS_Store

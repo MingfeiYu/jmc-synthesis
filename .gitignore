@@ -1,0 +1,10 @@
+# mockturtle build directory (binary and cmake cache)
+mockturtle/build/
+
+# MP-SPDZ downloaded/compiled dependencies
+MP-SPDZ/deps/
+MP-SPDZ/local/
+
+# macOS noise
+**/.DS_Store
+*.DS_Store

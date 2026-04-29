@@ -1,0 +1,231 @@
+% ============================================================
+%  Open Science Appendix — CCS 2026
+%  Include in the paper body with:  \input{open_science_appendix}
+%  Fill in [ANONYMOUS-URL] before submission.
+% ============================================================
+
+\section{Open Science Appendix}
+
+The artifact accompanying this paper is publicly available at the following
+anonymous URL and will remain accessible throughout the review period:
+%
+\begin{center}
+  \url{[ANONYMOUS-URL]}
+\end{center}
+%
+No login or credentials are required.
+The repository contains all material necessary to reproduce the
+experimental evaluation presented in the paper, and is self-contained
+with the exception of standard build tools (CMake, a C++17 compiler,
+Python~3.8+).
+A~\texttt{Dockerfile} is provided for reviewers who prefer a
+containerised environment with all dependencies pre-installed.
+
+% ------------------------------------------------------------
+\smallskip
+\noindent\textbf{Artifact Enumeration.}
+The artifact comprises seven categories of material, each described below
+together with its location inside the repository and its relation to the
+paper's core claims.
+
+\begin{enumerate}[leftmargin=*, label=\textbf{A\arabic*.}, itemsep=2pt]
+
+% ------ A1 -------
+\item \textbf{Circuit synthesis algorithm (source code).}
+  The core technical contribution of the paper—the max-local XAG
+  decomposition algorithm—is implemented across the following header files:
+  %
+  \begin{itemize}[nosep]
+    \item \texttt{mockturtle/include/mockturtle/algorithms/%
+           xag\_decomp\_max\_local.hpp} \\
+      Main algorithm: iterative max-local decomposition of AND gates inside
+      an XAG network to reduce the joint AND-gate (multiplicative-complexity)
+      cost under a given $n$-party ownership assignment.
+    \item \texttt{mockturtle/include/mockturtle/algorithms/%
+           mc\_analyzer.hpp} \\
+      Multiplicative-complexity oracle: queries the precomputed lookup
+      table~(A2) to find optimal XAG implementations of 6-input Boolean
+      functions.
+    \item \texttt{mockturtle/include/mockturtle/algorithms/%
+           acdecomp\_max\_local.hpp} \\
+      ACD (Ashenhurst--Curtis) decomposition helper invoked per node
+      inside the main algorithm.
+  \end{itemize}
+  %
+  The experiment driver that reads the Verilog benchmarks, invokes the
+  algorithm to saturation, and writes the resulting Bristol-format circuits
+  is \texttt{mockturtle/experiments/xag\_decomp\_max\_local.cpp}.
+  Upon completion it automatically prints an ASCII optimisation-summary
+  table to standard output (one per benchmark suite) showing, for each
+  circuit, the baseline AND-gate count, the baseline joint AND cost, the
+  corresponding optimised values, and the wall-clock synthesis time.
+  These are the circuit-level results reported in the paper.
+
+  In addition, \texttt{scripts/01\_run\_synthesis.sh} calls
+  \texttt{scripts/gen\_synthesis\_tables.py} immediately after the binary
+  finishes.  This script reads the two JSON result files written by the
+  experiment framework
+  (\texttt{experiments/hybrid\_arith\_cf\_max\_local.json} and
+  \texttt{experiments/hybrid\_crypto\_gp\_max\_local.json}) and produces
+  \LaTeX{}-formatted tables:
+  %
+  \begin{itemize}[nosep]
+    \item \texttt{mockturtle/experiments/results\_arith\_cp.tex} —
+      corresponds to Table~\ref{tab:arith_cf} in the paper.
+    \item \texttt{mockturtle/experiments/results\_crypto\_gp.tex} —
+      corresponds to Table~\ref{tab:crypto_gp} in the paper.
+  \end{itemize}
+  %
+  Pre-generated copies of both \texttt{.tex} files are already committed to
+  the repository so that reviewers can inspect the expected output without
+  running the synthesis step.
+
+  The synthesis tool is built on mockturtle~\cite{soeken2019mockturtle},
+  an open-source C++ logic-synthesis library (MIT Licence).
+
+% ------ A2 -------
+\item \textbf{Minimum-multiplicative-complexity lookup table.}
+  File: \texttt{mockturtle/experiments/databases/xag\_mc\_min\_6\_db}
+  (50~MB, plain text).
+
+  This database stores the minimum multiplicative complexity and an
+  optimal XAG implementation for every NPN-equivalence class of 6-input
+  Boolean functions.  It was obtained from \cite{testa2020mc} and is
+  included as a static data file.
+  The synthesis engine (A1) uses this table to synthesize derived BS and
+  FS functions (\S\ref{subsubsec:bs_fs_synthesis}).
+
+% ------ A3 -------
+\item \textbf{Benchmark input circuits (Verilog).}
+  Two suites of benchmark circuits are provided as Verilog source files:
+  %
+  \begin{itemize}[nosep]
+    \item \texttt{mockturtle/experiments/arith\_cf\_benchmarks/}
+      (7~circuits): \texttt{INT-add}, \texttt{INT-div}, \texttt{INT-mul},
+      \texttt{FP-add}, \texttt{FP-div}, \texttt{FP-mul}, \texttt{FP-eq} —
+      arithmetic and comparative functions.
+    \item \texttt{mockturtle/experiments/crypto\_gp\_benchmarks/}
+      (5~circuits): \texttt{AES-128}, \texttt{SHA3}, \texttt{Hamming},
+      \texttt{Encoder}, \texttt{LiteMIPS} — cryptographic and
+      general-purpose kernels.
+  \end{itemize}
+  %
+  These circuits serve as the inputs to the synthesis step and are the same
+  12~benchmarks evaluated in the paper.
+
+% ------ A4 -------
+\item \textbf{Bristol-format circuits (synthesis outputs / MPC inputs).}
+  For each of the 12~benchmarks, the repository contains two
+  Bristol-format circuit files:
+  %
+  \begin{itemize}[nosep]
+    \item \emph{Baseline circuit} (used directly as garbled-circuit input):
+      located in the root of each benchmark directory, e.g.\
+      \texttt{FP-add\_64\_64.txt} (64 garbler inputs, 64 evaluator inputs).
+    \item \emph{Optimised circuit} (output of A1):
+      located in \texttt{jmc\_opt\_bristol/}, e.g.\
+      \texttt{FP-add\_opt\_125\_124.txt}.
+  \end{itemize}
+  %
+  All 24~circuit files are also staged in
+  \texttt{MP-SPDZ/Programs/Circuits/} for immediate use with the MPC
+  evaluation framework~(A5).  Reviewers who wish to skip the synthesis
+  step and proceed directly to MPC evaluation may do so using these
+  pre-generated files.
+
+% ------ A5 -------
+\item \textbf{MPC evaluation framework and analysis scripts.}
+  Garbled-circuit execution is performed using MP-SPDZ~\cite{keller2020mp},
+  an open-source MPC framework (BSD 3-Clause Licence).
+  Three Python scripts added on top of the vanilla MP-SPDZ installation
+  implement the paper's evaluation workflow:
+  %
+  \begin{itemize}[nosep]
+    \item \texttt{MP-SPDZ/run\_mp\_spdz\_benchmarks.py} —
+      automatically compiles and runs each circuit under
+      Yao's garbled-circuit protocol (two-party, localhost) for a
+      configurable number of timed repetitions, logging per-run
+      communication and timing data.
+    \item \texttt{MP-SPDZ/analyze\_benchmarks.py} —
+      reads the per-run logs, computes averages, and emits the
+      comparison table (Table~\ref{tab:evaluation}) in both
+      plain-text (terminal) and \LaTeX{} format.
+    \item \texttt{MP-SPDZ/summarize\_mp\_spdz\_results.py} —
+      produces a per-metric summary CSV with mean, median, and
+      standard deviation over all repetitions.
+  \end{itemize}
+
+% ------ A6 -------
+\item \textbf{Pre-computed experimental results.}
+  To allow reviewers to inspect the paper's results without running
+  the full evaluation, the repository includes:
+  %
+  \begin{itemize}[nosep]
+    \item \texttt{MP-SPDZ/results/raw\_results.csv} —
+      raw per-repetition measurements (2{,}530~rows covering all 24~circuits
+      at up to 100~timed repetitions each).
+    \item \texttt{MP-SPDZ/results/logs/} —
+      individual party log files for all 1{,}800~successful runs
+      (used by \texttt{analyze\_benchmarks.py} to produce
+      Table~\ref{tab:evaluation}).
+  \end{itemize}
+  %
+  These results were obtained on the authors' evaluation machine; absolute
+  timing figures will vary across platforms, but relative improvements
+  (percentage reductions in AND-gate communication and evaluation time)
+  should be consistent.
+
+% ------ A7 -------
+\item \textbf{Automation scripts and documentation.}
+  The top-level \texttt{scripts/} directory contains five numbered shell
+  scripts that automate each stage of the pipeline
+  (\texttt{01\_run\_synthesis.sh} through \texttt{05\_analyze\_results.sh}),
+  a \texttt{run\_all.sh} wrapper that executes all stages end-to-end, and
+  \texttt{gen\_synthesis\_tables.py}—the Python helper that converts the
+  synthesis JSON results into \texttt{results\_arith\_cp.tex} and
+  \texttt{results\_crypto\_gp.tex} (see~A1).
+  A \texttt{Dockerfile} at the repository root provides a hermetic build
+  environment covering both tools.  Full step-by-step instructions,
+  expected outputs, and troubleshooting notes are given in
+  \texttt{README.md}.
+
+\end{enumerate}
+
+% ------------------------------------------------------------
+\smallskip
+\noindent\textbf{Access Instructions.}
+The artifact is accessible without authentication via the anonymous
+URL above.  After cloning the repository, reviewers may either follow
+the Docker path (recommended):
+%
+\begin{center}
+  \texttt{docker build -t ccs2026-artifact .} \\[2pt]
+  \texttt{docker run --rm -it ccs2026-artifact \textbackslash} \\
+  \texttt{\hspace{2em} bash /artifact/scripts/run\_all.sh 5}
+\end{center}
+%
+or the native path described in \texttt{README.md}.
+Passing \texttt{5} as the repetition argument completes a representative
+evaluation in approximately 30~minutes; passing \texttt{100} reproduces
+the full results from the paper (several hours).
+
+The pre-computed results can be re-analysed at any time without re-running
+either experiment.  To regenerate the garbled-circuit comparison table:
+%
+\begin{center}
+  \texttt{python3 MP-SPDZ/analyze\_benchmarks.py --tex}
+\end{center}
+%
+which writes an exact replica of Table~\ref{tab:results_mp-spdz} in the paper.
+To regenerate the circuit-optimisation summary tables from the committed
+JSON results:
+%
+\begin{center}
+  \texttt{python3 scripts/gen\_synthesis\_tables.py}
+\end{center}
+%
+which writes \texttt{results\_arith\_cp.tex} and
+\texttt{results\_crypto\_gp.tex} to
+\texttt{mockturtle/experiments/}, reproducing
+Tables~\ref{tab:results_arith} and~\ref{tab:results_tinygarble} in the paper.
+

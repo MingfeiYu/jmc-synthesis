@@ -1,0 +1,34 @@
+\begin{tabular}{lcccccccc}
+    \toprule[1.2pt]
+    \multirow{2}{*}{Benchmark} & \multirow{2}{*}{\#Inputs (G/E)} & \multicolumn{3}{c}{Oblivious Transfer~(OT)} & \multicolumn{2}{c}{Garbled Gates~(GG)} & \multirow{2}{*}{Total Comm. [KB]} \\
+    \cmidrule(lr){3-5} \cmidrule(lr){6-7}
+     & & Label [ms] & Comm. [KB] & Time [ms] & Comm. [KB] & Eval. [ms] & \\
+    \midrule
+    \texttt{INT-div} (base) & 64/64 & 0.028 & 5.248 & 17.062 & 169.440 & 3.360 & 174.688 \\
+    \texttt{INT-div} (opt.) & 189/91 & 0.030 ($\uparrow$ 7.14\%) & 5.680 ($\uparrow$ 8.23\%) & 16.899 ($\downarrow$ 0.96\%) & 164.384 ($\downarrow$ 2.98\%) & 3.295 ($\downarrow$ 1.93\%) & 170.064 ($\downarrow$ 2.65\%) \\
+    \midrule
+    \texttt{INT-mul} (base) & 64/64 & 0.028 & 5.248 & 16.648 & 245.024 & 0.493 & 250.272 \\
+    \texttt{INT-mul} (opt.) & 254/238 & 0.032 ($\uparrow$ 14.29\%) & 8.032 ($\uparrow$ 53.05\%) & 16.248 ($\downarrow$ 2.40\%) & 236.160 ($\downarrow$ 3.62\%) & 0.438 ($\downarrow$ 11.16\%) & 244.192 ($\downarrow$ 2.43\%) \\
+    \midrule
+    \texttt{FP-add} (base) & 64/64 & 0.027 & 5.248 & 18.107 & 164.576 & 0.431 & 169.824 \\
+    \texttt{FP-add} (opt.) & 125/124 & 0.026 ($\downarrow$ 3.70\%) & 6.208 ($\uparrow$ 18.29\%) & 17.997 ($\downarrow$ 0.61\%) & 154.432 ($\downarrow$ 6.16\%) & 0.441 ($\uparrow$ 2.32\%) & 160.640 ($\downarrow$ 5.41\%) \\
+    \midrule
+    \texttt{FP-div} (base) & 64/64 & 0.026 & 5.248 & 16.850 & 1549.120 & 5.994 & 1554.368 \\
+    \texttt{FP-div} (opt.) & 183/149 & 0.029 ($\uparrow$ 11.54\%) & 6.608 ($\uparrow$ 25.91\%) & 16.326 ($\downarrow$ 3.11\%) & 1426.110 ($\downarrow$ 7.94\%) & 5.921 ($\downarrow$ 1.22\%) & 1432.718 ($\downarrow$ 7.83\%) \\
+    \midrule
+    \texttt{FP-mul} (base) & 64/64 & 0.029 & 5.248 & 16.035 & 533.952 & 0.758 & 539.200 \\
+    \texttt{FP-mul} (opt.) & 143/132 & 0.030 ($\uparrow$ 3.45\%) & 6.336 ($\uparrow$ 20.73\%) & 15.288 ($\downarrow$ 4.66\%) & 411.552 ($\downarrow$ 22.92\%) & 0.613 ($\downarrow$ 19.13\%) & 417.888 ($\downarrow$ 22.50\%) \\
+    \midrule
+    \texttt{FP-eq} (base) & 64/64 & 0.040 & 5.248 & 23.979 & 10.081 & 0.039 & 15.329 \\
+    \texttt{FP-eq} (opt.) & 81/81 & 0.040 ($\uparrow$ 0.00\%) & 5.520 ($\uparrow$ 5.18\%) & 23.525 ($\downarrow$ 1.89\%) & 3.105 ($\downarrow$ 69.20\%) & 0.027 ($\downarrow$ 30.77\%) & 8.625 ($\downarrow$ 43.73\%) \\
+    \midrule
+    \texttt{AES-128} (base) & 128/128 & 0.031 & 6.272 & 16.337 & 206.400 & 0.187 & 212.672 \\
+    \texttt{AES-128} (opt.) & 1408/128 & 0.030 ($\downarrow$ 3.23\%) & 6.272 ($\uparrow$ 0.00\%) & 16.211 ($\downarrow$ 0.77\%) & 165.024 ($\downarrow$ 20.05\%) & 0.166 ($\downarrow$ 11.23\%) & 171.296 ($\downarrow$ 19.46\%) \\
+    \midrule
+    \texttt{Encoder} (base) & 16/16 & 0.038 & 4.480 & 25.398 & 1.701 & 0.020 & 6.181 \\
+    \texttt{Encoder} (opt.) & 5/5 & 0.035 ($\downarrow$ 7.89\%) & 4.304 ($\downarrow$ 3.93\%) & 24.275 ($\downarrow$ 4.42\%) & 0.196 ($\downarrow$ 88.48\%) & 0.016 ($\downarrow$ 20.00\%) & 4.500 ($\downarrow$ 27.20\%) \\
+    \midrule
+    \texttt{LiteMIPS} (base) & 2048/2048 & 0.068 & 36.992 & 15.719 & 374.046 & 0.373 & 411.038 \\
+    \texttt{LiteMIPS} (opt.) & 3072/372 & 0.029 ($\downarrow$ 57.35\%) & 10.176 ($\downarrow$ 72.49\%) & 16.399 ($\uparrow$ 4.33\%) & 225.920 ($\downarrow$ 39.60\%) & 0.247 ($\downarrow$ 33.78\%) & 236.096 ($\downarrow$ 42.56\%) \\
+    \bottomrule[1.2pt]
+\end{tabular}
