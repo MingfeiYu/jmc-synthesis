@@ -1,7 +1,6 @@
-# Artifact: [Paper Title]
+# Artifact: Think Locally Before Computing Jointly: Efficient Secure Multi-Party Computation via Maximizing Local Processing
 
-**[Author names]**  
-CCS 2026 (Paper 5220)
+**Paper 5220**  
 
 ---
 
@@ -75,7 +74,7 @@ docker build -t ccs2026-artifact .
 ```
 
 > Building the image downloads dependencies and compiles both tools.
-> **Expected time: 20–40 minutes** on first build (MP-SPDZ compilation dominates).
+> **Expected time: 20 minutes** on first build.
 
 ### Run the full pipeline
 
@@ -83,16 +82,8 @@ docker build -t ccs2026-artifact .
 # Quick evaluation (5 repetitions per circuit, 3-5 min)
 docker run --rm -it ccs2026-artifact bash /artifact/scripts/run_all.sh 5
 
-# Full results matching the paper (100 repetitions, 1-2 hours)
+# Full results matching the paper (100 repetitions, 1-2 hour)
 docker run --rm -it ccs2026-artifact bash /artifact/scripts/run_all.sh 100
-```
-
-### Persist results on the host
-
-```bash
-docker run --rm -it \
-  -v "$(pwd)/results:/artifact/MP-SPDZ/results" \
-  ccs2026-artifact bash /artifact/scripts/run_all.sh 5
 ```
 
 ---
@@ -225,10 +216,6 @@ step 03.
 ---
 
 ## Troubleshooting
-
-**`cmake` cannot find a C++17 compiler**
-Ensure your compiler supports `-std=c++17`.  On Ubuntu, install
-`gcc` ≥ 9 or `clang` ≥ 7.
 
 **MP-SPDZ build fails with missing headers**
 Make sure all `-dev` packages listed under *MP-SPDZ dependencies* are installed.
