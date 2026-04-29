@@ -79,10 +79,10 @@ docker build -t ccs2026-artifact .
 ### Run the full pipeline
 
 ```bash
-# Quick evaluation (5 repetitions per circuit, 3-5 min)
+# Quick evaluation (5 repetitions per circuit, 5-10 min)
 docker run --rm -it ccs2026-artifact bash /artifact/scripts/run_all.sh 5
 
-# Full results matching the paper (100 repetitions, 1-2 hour)
+# Full results matching the paper (100 repetitions, 2-3 hour)
 docker run --rm -it ccs2026-artifact bash /artifact/scripts/run_all.sh 100
 ```
 
@@ -163,10 +163,10 @@ Compiles `yao-party.x`.  **Expected time:** 5 minutes on first build.
 ### Step 4 — Run MPC benchmarks
 
 ```bash
-# Quick (5 reps, 3-5 min)
+# Quick (5 reps, 5-10 min)
 bash scripts/04_run_mpc_eval.sh 5
 
-# Full (100 reps, 1-2 hour)
+# Full (100 reps, 2-3 hour)
 bash scripts/04_run_mpc_eval.sh 100
 ```
 

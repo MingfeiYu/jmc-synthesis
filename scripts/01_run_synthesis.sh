@@ -17,12 +17,18 @@ echo "============================================================"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-cmake -G Ninja \
-      -DMOCKTURTLE_BUILD_EXPERIMENTS=ON \
-      -DCMAKE_BUILD_TYPE=Release \
-      .. 2>&1 | tail -5
-
-ninja xag_decomp_max_local
+if command -v ninja &>/dev/null; then
+    cmake -G Ninja \
+          -DMOCKTURTLE_BUILD_EXPERIMENTS=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          .. 2>&1 | tail -5
+    ninja xag_decomp_max_local
+else
+    cmake -DMOCKTURTLE_BUILD_EXPERIMENTS=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          .. 2>&1 | tail -5
+    make xag_decomp_max_local -j"$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)"
+fi
 echo "[ok] Binary: $BUILD_DIR/experiments/xag_decomp_max_local"
 
 # The binary resolves xag_mc_min_6_db relative to its working directory.
