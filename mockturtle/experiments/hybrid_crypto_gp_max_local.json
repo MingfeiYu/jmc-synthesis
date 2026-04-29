@@ -1,0 +1,92 @@
+[
+  {
+    "entries": [
+      {
+        "AND count": 6446,
+        "benchmark": "AES",
+        "joint AND count": 5153,
+        "opt. AND count": 6446,
+        "opt. joint AND count": 5153,
+        "runtime [s]": 1.9282509088516235
+      },
+      {
+        "AND count": 1600,
+        "benchmark": "SHA3",
+        "joint AND count": 1600,
+        "opt. AND count": 1600,
+        "opt. joint AND count": 1600,
+        "runtime [s]": 1.529629111289978
+      },
+      {
+        "AND count": 48,
+        "benchmark": "Hamming",
+        "joint AND count": 48,
+        "opt. AND count": 48,
+        "opt. joint AND count": 48,
+        "runtime [s]": 1.3121622800827026
+      },
+      {
+        "AND count": 53,
+        "benchmark": "Encoder",
+        "joint AND count": 10,
+        "opt. AND count": 53,
+        "opt. joint AND count": 6,
+        "runtime [s]": 2.8619601726531982
+      },
+      {
+        "AND count": 11465,
+        "benchmark": "LiteMIPS",
+        "joint AND count": 9380,
+        "opt. AND count": 9133,
+        "opt. joint AND count": 6965,
+        "runtime [s]": 27.561880111694336
+      }
+    ],
+    "version": "ce83cbc"
+  },
+  {
+    "entries": [
+      {
+        "AND count": 6446,
+        "benchmark": "AES",
+        "joint AND count": 5153,
+        "opt. AND count": 6446,
+        "opt. joint AND count": 5153,
+        "runtime [s]": 1.877884030342102
+      },
+      {
+        "AND count": 1600,
+        "benchmark": "SHA3",
+        "joint AND count": 1600,
+        "opt. AND count": 1600,
+        "opt. joint AND count": 1600,
+        "runtime [s]": 1.4528857469558716
+      },
+      {
+        "AND count": 48,
+        "benchmark": "Hamming",
+        "joint AND count": 48,
+        "opt. AND count": 48,
+        "opt. joint AND count": 48,
+        "runtime [s]": 1.1636497974395752
+      },
+      {
+        "AND count": 53,
+        "benchmark": "Encoder",
+        "joint AND count": 10,
+        "opt. AND count": 53,
+        "opt. joint AND count": 6,
+        "runtime [s]": 2.702284812927246
+      },
+      {
+        "AND count": 11465,
+        "benchmark": "LiteMIPS",
+        "joint AND count": 9380,
+        "opt. AND count": 9133,
+        "opt. joint AND count": 6965,
+        "runtime [s]": 28.079835891723633
+      }
+    ],
+    "version": "##GITHUB##"
+  }
+]

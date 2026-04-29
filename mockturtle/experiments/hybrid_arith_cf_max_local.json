@@ -1,0 +1,124 @@
+[
+  {
+    "entries": [
+      {
+        "AND count": 128,
+        "benchmark": "INT-add",
+        "joint AND count": 128,
+        "opt. AND count": 128,
+        "opt. joint AND count": 128,
+        "runtime [s]": 2.099280595779419
+      },
+      {
+        "AND count": 5291,
+        "benchmark": "INT-div",
+        "joint AND count": 5205,
+        "opt. AND count": 5265,
+        "opt. joint AND count": 5133,
+        "runtime [s]": 93.28993225097656
+      },
+      {
+        "AND count": 7653,
+        "benchmark": "INT-mul",
+        "joint AND count": 7410,
+        "opt. AND count": 7656,
+        "opt. joint AND count": 7376,
+        "runtime [s]": 14.12723159790039
+      },
+      {
+        "AND count": 5141,
+        "benchmark": "FP-add",
+        "joint AND count": 4938,
+        "opt. AND count": 5038,
+        "opt. joint AND count": 4824,
+        "runtime [s]": 16.764549255371094
+      },
+      {
+        "AND count": 48408,
+        "benchmark": "FP-div",
+        "joint AND count": 44834,
+        "opt. AND count": 48149,
+        "opt. joint AND count": 44564,
+        "runtime [s]": 77.43090057373047
+      },
+      {
+        "AND count": 16684,
+        "benchmark": "FP-mul",
+        "joint AND count": 13113,
+        "opt. AND count": 16439,
+        "opt. joint AND count": 12859,
+        "runtime [s]": 15.058167457580566
+      },
+      {
+        "AND count": 315,
+        "benchmark": "FP-eq",
+        "joint AND count": 191,
+        "opt. AND count": 315,
+        "opt. joint AND count": 97,
+        "runtime [s]": 5.9619951248168945
+      }
+    ],
+    "version": "ce83cbc"
+  },
+  {
+    "entries": [
+      {
+        "AND count": 128,
+        "benchmark": "INT-add",
+        "joint AND count": 128,
+        "opt. AND count": 128,
+        "opt. joint AND count": 128,
+        "runtime [s]": 2.004502296447754
+      },
+      {
+        "AND count": 5291,
+        "benchmark": "INT-div",
+        "joint AND count": 5205,
+        "opt. AND count": 5265,
+        "opt. joint AND count": 5133,
+        "runtime [s]": 94.53291320800781
+      },
+      {
+        "AND count": 7653,
+        "benchmark": "INT-mul",
+        "joint AND count": 7410,
+        "opt. AND count": 7656,
+        "opt. joint AND count": 7376,
+        "runtime [s]": 14.154007911682129
+      },
+      {
+        "AND count": 5141,
+        "benchmark": "FP-add",
+        "joint AND count": 4938,
+        "opt. AND count": 5038,
+        "opt. joint AND count": 4824,
+        "runtime [s]": 16.747732162475586
+      },
+      {
+        "AND count": 48408,
+        "benchmark": "FP-div",
+        "joint AND count": 44834,
+        "opt. AND count": 48149,
+        "opt. joint AND count": 44564,
+        "runtime [s]": 73.12116241455078
+      },
+      {
+        "AND count": 16684,
+        "benchmark": "FP-mul",
+        "joint AND count": 13113,
+        "opt. AND count": 16439,
+        "opt. joint AND count": 12859,
+        "runtime [s]": 14.704864501953125
+      },
+      {
+        "AND count": 315,
+        "benchmark": "FP-eq",
+        "joint AND count": 191,
+        "opt. AND count": 315,
+        "opt. joint AND count": 97,
+        "runtime [s]": 5.838385105133057
+      }
+    ],
+    "version": "##GITHUB##"
+  }
+]
