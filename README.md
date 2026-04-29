@@ -59,7 +59,7 @@ ccs2026_artifact/
 
 ---
 
-## Option A — Docker (Recommended)
+## Option A — Docker
 
 Docker eliminates dependency management and guarantees a reproducible
 environment.  All steps run inside a single container.
