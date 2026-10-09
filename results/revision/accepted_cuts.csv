@@ -1,0 +1,9 @@
+config,benchmark,cut_size,count
+k8,LiteMIPS,3,1024
+k8,LiteMIPS,4,343
+k8,LiteMIPS,5,8
+k8,LiteMIPS,6,16
+k8_cl15,LiteMIPS,3,1024
+k8_cl15,LiteMIPS,4,670
+k8_cl15,LiteMIPS,5,8
+k8_cl15,LiteMIPS,6,16

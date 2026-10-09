@@ -5,6 +5,12 @@
 #include "../utils/progress_bar.hpp"
 #include "../views/fanout_view.hpp"
 // #include "../views/topo_view.hpp"
+/* cut-size bound; a compile-time constant since it is a template argument of
+ * the cut enumeration */
+#ifndef JMC_NUM_VARS
+#define JMC_NUM_VARS 8u
+#endif
+
 #include "cut_enumeration.hpp"
 #include "cut_enumeration/rewrite_cut.hpp"
 #include "detail/mffc_utils.hpp"
@@ -12,9 +18,36 @@
 #include "mc_analyzer.hpp"
 
 #include <algorithm>
+#include <cstdlib>
+#include <type_traits>
 
 namespace mockturtle
 {
+
+namespace detail
+{
+
+/*! \brief Copies a cut truth table into a dynamic truth table.
+ *
+ * For at most six variables, kitty stores the bits of a static truth table in
+ * a scalar instead of an array.
+ */
+template<class TT>
+inline void copy_cut_tt( kitty::dynamic_truth_table& dst, TT const& src )
+{
+  if constexpr ( std::is_same_v<std::decay_t<decltype( src._bits )>, uint64_t> )
+  {
+    dst._bits[0] = src._bits;
+  }
+  else
+  {
+    for ( auto i{ 0u }; i < dst.num_blocks(); ++i )
+    {
+      dst._bits[i] = src._bits[i];
+    }
+  }
+}
+} // namespace detail
 
 struct mc_mpc_cost
 {
@@ -338,7 +371,7 @@ class xag_decomp_max_local
 {
 public:
   using mpc_network = owner_view<xag_network>;
-  static constexpr uint32_t num_vars = 8u;
+  static constexpr uint32_t num_vars = JMC_NUM_VARS;
   explicit xag_decomp_max_local( const uint32_t num_parties,
                                  xag_network const& ntk,
                                  std::string const& filename,
@@ -704,7 +737,7 @@ public:
   using mpc_network = owner_view<xag_network>;
   using node = mpc_network::node;
   using signal = mpc_network::signal;
-  static constexpr uint32_t num_vars = 8u;
+  static constexpr uint32_t num_vars = JMC_NUM_VARS;
   using network_cuts_t = dynamic_network_cuts<mpc_network, num_vars, true, cut_enumeration_rewrite_cut>;
   using cut_manager_t = detail::dynamic_cut_enumeration_impl<mpc_network, num_vars, true, cut_enumeration_rewrite_cut>;
   using cut_t = typename network_cuts_t::cut_t;
@@ -808,11 +841,7 @@ public:
         // fmt::print( "\n" );
         
         kitty::dynamic_truth_table tt( cut->size() );
-        /* `cut->size()` <= 8u */
-        for ( auto i{ 0u }; i < tt.num_blocks(); ++i )
-        {
-          tt._bits[i] = cuts.truth_table( *cut )._bits[i];
-        }
+        detail::copy_cut_tt( tt, cuts.truth_table( *cut ) );
         // bool all_pi = true;
         std::vector<std::vector<uint32_t>> ownerships( _num_parties + 1u );
         std::vector<node> leaves( cut->size() );
@@ -984,10 +1013,7 @@ public:
         // fmt::print( "[m] Network rewriting is happening\n" );
         auto best_cut = cuts.cuts( _ntk.node_to_index( n ) )[cut_best_index - 1];
         kitty::dynamic_truth_table tt( best_cut.size() );
-        for ( auto i{ 0u }; i < tt.num_blocks(); ++i )
-        {
-          tt._bits[i] = cuts.truth_table( best_cut )._bits[i];
-        }
+        detail::copy_cut_tt( tt, cuts.truth_table( best_cut ) );
         std::vector<mpc_network::signal> children( best_cut.size() ); 
         std::vector<mpc_network::node> leaves( best_cut.size() );
         auto ctr = 0u;
@@ -1001,6 +1027,12 @@ public:
         // auto pi0 = _ntk.make_signal( _ntk.pi_at( 0u ) );
         // _ntk.create_xor( pi0, _ntk.make_signal( n ) );
         // fmt::print( "[m] Size of `_ntk` is {}\n", _ntk.size() );
+        /* trace of the accepted cuts, enabled with JMC_TRACE_CUTS */
+        if ( std::getenv( "JMC_TRACE_CUTS" ) != nullptr )
+        {
+          const auto* tag = std::getenv( "JMC_DUMP_TAG" );
+          fmt::print( "ACCEPT,{},{},{}\n", tag != nullptr ? tag : "-", best_cut.size(), gain_best );
+        }
         mpc_network::signal n_new_impl = _mc_analyzer.min_mc_resyn_mpc( _ntk, children, decomp_res_best, encodings_best, sel_polar_best, min_mc_mux_best );
         /* TODO : check if the ownership of the newly inserted nodes are correctly assigned */
         // if ( _ntk.get_node( n_new_impl ) == n )
@@ -1158,11 +1190,7 @@ public:
         }
         
         kitty::dynamic_truth_table tt( cut->size() );
-        /* `cut->size()` <= 8u */
-        for ( auto i{ 0u }; i < tt.num_blocks(); ++i )
-        {
-          tt._bits[i] = cuts.truth_table( *cut )._bits[i];
-        }
+        detail::copy_cut_tt( tt, cuts.truth_table( *cut ) );
         std::vector<std::vector<uint32_t>> ownerships( _num_parties + 1u );
         std::vector<node> leaves( cut->size() );
         auto ctr = 0u;
@@ -1247,10 +1275,7 @@ public:
         fmt::print( "[m] Network rewriting is happening\n" );
         auto best_cut = cuts.cuts( _ntk.node_to_index( n ) )[cut_best_index - 1];
         kitty::dynamic_truth_table tt( best_cut.size() );
-        for ( auto i{ 0u }; i < tt.num_blocks(); ++i )
-        {
-          tt._bits[i] = cuts.truth_table( best_cut )._bits[i];
-        }
+        detail::copy_cut_tt( tt, cuts.truth_table( best_cut ) );
         std::vector<mpc_network::signal> children( best_cut.size() ); 
         std::vector<mpc_network::node> leaves( best_cut.size() );
         auto ctr = 0u;
@@ -1261,6 +1286,12 @@ public:
           ++ctr;
         }
 
+        /* trace of the accepted cuts, enabled with JMC_TRACE_CUTS */
+        if ( std::getenv( "JMC_TRACE_CUTS" ) != nullptr )
+        {
+          const auto* tag = std::getenv( "JMC_DUMP_TAG" );
+          fmt::print( "ACCEPT,{},{},{}\n", tag != nullptr ? tag : "-", best_cut.size(), gain_best );
+        }
         mpc_network::signal n_new_impl = _mc_analyzer.min_mc_resyn_mpc( _ntk, children, decomp_res_best, encodings_best, sel_polar_best, min_mc_mux_best );
         detail::recursive_deref<mpc_network, decltype( leaves.begin() ), mc_mpc_cost>( _ntk, n, leaves.begin(), leaves.end() );
         detail::recursive_ref<mpc_network, decltype( leaves.begin() ), mc_mpc_cost>( _ntk, _ntk.get_node( n_new_impl ), leaves.begin(), leaves.end() );

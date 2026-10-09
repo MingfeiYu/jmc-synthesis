@@ -12,6 +12,7 @@
 #include <kitty/spectral.hpp>
 #include <kitty/static_truth_table.hpp>
 
+#include <cstdlib>
 #include <fstream>
 
 namespace mockturtle
@@ -881,14 +882,111 @@ public:
 
   using mpc_network = owner_view<xag_network>;
 
+  /*! \brief Writes one group of the decomposition as a multi-output instance.
+   *
+   * The free-set and bound-set functions are expressed over the union of their
+   * supports and written as one line
+   *     tag kind n k tt_1;...;tt_k mc_db_sum new_ands
+   * where the truth tables are in hexadecimal and ordered by ascending leaf
+   * index, `mc_db_sum` is the sum of the per-output database MCs and
+   * `new_ands` is the number of AND nodes created for the group.
+   */
+  template<class Ntk>
+  void dump_instance_group( std::FILE* f, char const* kind, Ntk const& res, std::vector<decomp_result> const& funcs, uint32_t begin_idx, uint32_t end_idx, std::vector<uint8_t> const& mcs, uint64_t node_begin, uint64_t node_end, uint32_t num_leaves )
+  {
+    if ( end_idx <= begin_idx )
+    {
+      return;
+    }
+    std::vector<uint32_t> vars;
+    for ( auto i = begin_idx; i < end_idx; ++i )
+    {
+      for ( auto v : funcs[i].support )
+      {
+        if ( v >= num_leaves )
+        {
+          fmt::print( "[w] {} function refers to a non-leaf signal, skipping group\n", kind );
+          return;
+        }
+        vars.push_back( v );
+      }
+    }
+    std::sort( vars.begin(), vars.end() );
+    vars.erase( std::unique( vars.begin(), vars.end() ), vars.end() );
+    const uint32_t n = vars.size();
+
+    std::string tts;
+    for ( auto i = begin_idx; i < end_idx; ++i )
+    {
+      auto const& tt = funcs[i].tt;
+      auto const& support = funcs[i].support;
+      kitty::dynamic_truth_table ext( n );
+      for ( uint64_t m = 0u; m < ( uint64_t( 1 ) << n ); ++m )
+      {
+        uint64_t idx = 0u;
+        for ( auto j = 0u; j < support.size(); ++j )
+        {
+          const auto pos = std::lower_bound( vars.begin(), vars.end(), support[j] ) - vars.begin();
+          idx |= ( ( m >> pos ) & 1u ) << j;
+        }
+        if ( kitty::get_bit( tt, idx ) )
+        {
+          kitty::set_bit( ext, m );
+        }
+      }
+      if ( !tts.empty() )
+      {
+        tts += ";";
+      }
+      tts += kitty::to_hex( ext );
+    }
+
+    uint32_t mc_sum = 0u;
+    for ( auto i = begin_idx; i < end_idx && i < mcs.size(); ++i )
+    {
+      mc_sum += mcs[i];
+    }
+    uint32_t new_ands = 0u;
+    for ( auto idx = node_begin; idx < node_end; ++idx )
+    {
+      if ( res.is_and( res.index_to_node( idx ) ) )
+      {
+        ++new_ands;
+      }
+    }
+    const char* tag = std::getenv( "JMC_DUMP_TAG" );
+    fmt::print( f, "{} {} {} {} {} {} {}\n", ( tag ? tag : "-" ), kind, n, ( end_idx - begin_idx ), tts, mc_sum, new_ands );
+  }
+
   mpc_network::signal min_mc_resyn_mpc( mpc_network& res, std::vector<mpc_network::signal> const& leaves, std::array<std::vector<decomp_result>, 2u> const& decomp_fs_bs, std::vector<masked_encoding> const& encodings, uint8_t sel_polar, bool min_mc_mux )
   {
     auto signals = leaves;
     // fmt::print( "[m] {} FS functions, {} BS funcitons, and 1 top function\n", decomp_fs_bs[0].size(), ( decomp_fs_bs[1].size() - 1 ) );
     std::vector<decomp_result> decomp_res = decomp_fs_bs[0];
     decomp_res.insert( decomp_res.end(), decomp_fs_bs[1].begin(), decomp_fs_bs[1].end() );
+
+    /* instance dump, enabled by setting JMC_DUMP_INSTANCES to an output file */
+    const char* dump_path = std::getenv( "JMC_DUMP_INSTANCES" );
+    std::vector<uint8_t> dump_mcs;
+    const uint32_t dump_num_fs = decomp_fs_bs[0].size();
+    const uint64_t dump_node_fs_begin = res.size();
+    uint64_t dump_node_bs_begin = res.size();
+
     for ( uint32_t i = 0u; i < decomp_res.size(); ++i )
     {
+      if ( i == dump_num_fs )
+      {
+        dump_node_bs_begin = res.size();
+      }
+      if ( dump_path && ( i + 1 == decomp_res.size() ) )
+      {
+        if ( std::FILE* f = std::fopen( dump_path, "a" ) )
+        {
+          dump_instance_group( f, "FS", res, decomp_res, 0u, dump_num_fs, dump_mcs, dump_node_fs_begin, dump_node_bs_begin, leaves.size() );
+          dump_instance_group( f, "BS", res, decomp_res, dump_num_fs, i, dump_mcs, dump_node_bs_begin, res.size(), leaves.size() );
+          std::fclose( f );
+        }
+      }
       /* for debugging */
       // std::string func_name = "";
       // if ( i < decomp_fs_bs[0].size() )
@@ -1065,12 +1163,14 @@ public:
       }
 
       xag_network::signal sig = _db.get_constant( false );
+      uint8_t mc_db = 0u;
       const auto it_search = _func_mc.find( kitty::to_hex( tt_ext_repr ) );
       if ( it_search != _func_mc.end() )
       {
         uint8_t mc = 0u;
         std::string db_repr_str = "";
         std::tie( db_repr_str, mc, sig ) = it_search->second;
+        mc_db = mc;
         kitty::static_truth_table<6u> db_repr;
         kitty::create_from_hex_string( db_repr, db_repr_str );
         kitty::exact_spectral_canonization( db_repr, [&trans]( auto const& ops ) {
@@ -1082,6 +1182,8 @@ public:
         fmt::print( "[e] Unknown representative function, returning 0...\n" );
         return res.get_constant( false ); /* TODO: Handle this case */
       }
+
+      dump_mcs.push_back( mc_db );
 
       bool out_neg = false;
       std::vector<mpc_network::signal> final_xors;

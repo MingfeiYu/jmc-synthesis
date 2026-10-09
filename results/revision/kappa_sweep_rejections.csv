@@ -1,0 +1,7 @@
+config,benchmark,rejected_candidates
+k10,AES,76
+k10,FP-add,8102
+k10,FP-eq,10
+k10,FP-mul,1760
+k10,INT-mul,216183
+k10,LiteMIPS,76800
