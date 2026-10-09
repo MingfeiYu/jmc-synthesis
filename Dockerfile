@@ -1,6 +1,6 @@
 ###############################################################################
-# Build:  docker build -t ccs2026-artifact .
-# Run:    docker run --rm -it ccs2026-artifact
+# Build:  docker build -t jmc-synthesis .
+# Run:    docker run --rm -it jmc-synthesis
 #
 # Inside the container run the full pipeline:
 #   bash /artifact/scripts/run_all.sh [REPETITIONS]
