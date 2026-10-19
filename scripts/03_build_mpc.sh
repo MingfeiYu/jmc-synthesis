@@ -1,22 +1,12 @@
 #!/usr/bin/env bash
-# Build the MP-SPDZ Yao (garbled-circuit) party binary.
-# Requires: clang++-11 (or g++), libssl-dev, libgmp-dev, libboost-dev,
-#           libboost-thread-dev, libsodium-dev, libntl-dev, automake, libtool.
-# On Ubuntu/Debian: apt-get install -y build-essential clang-11 libssl-dev
-#   libgmp-dev libboost-dev libboost-thread-dev libsodium-dev libntl-dev
-#   automake libtool libclang-dev
+# Builds the Yao garbled-circuit binary of MP-SPDZ. See README.md for the
+# required packages.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MP_SPDZ_DIR="$(cd "$SCRIPT_DIR/../MP-SPDZ" && pwd)"
 
-echo "============================================================"
-echo " Building MP-SPDZ yao-party.x"
-echo "============================================================"
-
 cd "$MP_SPDZ_DIR"
-
-# Write a minimal CONFIG.mine if one does not already exist.
 if [ ! -f CONFIG.mine ]; then
     if command -v clang++-11 &>/dev/null; then
         echo "CXX = clang++-11" > CONFIG.mine
@@ -26,6 +16,3 @@ if [ ! -f CONFIG.mine ]; then
 fi
 
 make yao-party.x
-
-echo ""
-echo "[ok] MP-SPDZ Yao binary built: $MP_SPDZ_DIR/yao-party.x"

@@ -1,10 +1,15 @@
-# mockturtle build directory (binary and cmake cache)
+# mockturtle build
 mockturtle/build/
 
-# MP-SPDZ downloaded/compiled dependencies
+# MP-SPDZ dependencies
 MP-SPDZ/deps/
 MP-SPDZ/local/
 
-# macOS noise
+# macOS
 **/.DS_Store
 *.DS_Store
+
+# local benchmark runs
+/results/logs/
+/results/raw_results.csv
+MP-SPDZ/results/logs/

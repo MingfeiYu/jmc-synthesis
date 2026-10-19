@@ -1,19 +1,9 @@
 #!/usr/bin/env python3
-"""
-Analyze MP-SPDZ garbled circuit benchmark logs.
+"""Compares baseline and optimized circuits from the party-0 logs of
+run_mp_spdz_benchmarks.py and prints Table 4 of the paper; with --tex, the
+table is also written to results/results_table.tex.
 
-For each baseline/optimized pair, reports six metrics:
-  1. Label [ms]      — wire-label sending time  (OT sub-column)
-  2. Comm. [KB]      — OT communication volume  (OT sub-column)
-  3. Time [ms]       — OT wall-clock time        (OT sub-column)
-  4. Comm. [KB]      — garbled-gate data volume  (GG sub-column)
-  5. Eval. [ms]      — AND-gate evaluation time  (GG sub-column)
-  6. Total Comm.[KB] — columns 2 + 4 combined
-
-Column layout matches the paper's Table.
-
-Usage:
-  python3 analyze_benchmarks.py [--log-dir PATH] [--tex]
+Usage: analyze_benchmarks.py [--log-dir PATH] [--tex]
 """
 
 import argparse
@@ -24,20 +14,18 @@ from collections import defaultdict
 
 DEFAULT_LOG_DIR = os.path.join(os.path.dirname(__file__), "results", "logs")
 
-# Display name overrides: internal base_name -> printed label
 DISPLAY_NAMES = {"AES": "AES-128"}
+
+BENCHMARK_ORDER = ["INT-div", "INT-mul", "FP-add", "FP-div", "FP-mul", "FP-eq",
+                   "AES", "Encoder", "LiteMIPS"]
 
 
 def display_name(name):
     return DISPLAY_NAMES.get(name, name)
 
 
-# ---------------------------------------------------------------------------
-# Parsing
-# ---------------------------------------------------------------------------
-
 def parse_log(path):
-    """Return (one_to_one_mb, sending_mb, and_time_s, ot_time_s, wire_label_time_s)."""
+    """Returns the OT and garbled-gate traffic [MB] and the AND, OT and wire-label times [s]."""
     one_to_one_mb = sending_mb = and_time_s = ot_time_s = wire_label_time_s = None
     for line in open(path):
         if one_to_one_mb is None:
@@ -65,12 +53,8 @@ def parse_log(path):
     return one_to_one_mb, sending_mb, and_time_s, ot_time_s, wire_label_time_s
 
 
-# ---------------------------------------------------------------------------
-# Pairing logic
-# ---------------------------------------------------------------------------
-
 def parse_spec(spec):
-    """Return (base_name, is_opt, suffix) from a benchmark spec string."""
+    """Splits `name_opt_G_E` or `name_G_E` into (name, is_opt, "G_E")."""
     if "_opt_" in spec:
         idx = spec.index("_opt_")
         return spec[:idx], True, spec[idx + 5:]
@@ -81,10 +65,8 @@ def parse_spec(spec):
 
 
 def build_pairs(all_specs):
-    """Match each optimized spec with its baseline. Returns list of (base_name, bspec, ospec)."""
-    opt_specs = sorted(s for s in all_specs if "_opt_" in s)
     pairs = []
-    for ospec in opt_specs:
+    for ospec in sorted(s for s in all_specs if "_opt_" in s):
         base_name, _, opt_suffix = parse_spec(ospec)
         candidates = [s for s in all_specs if "_opt_" not in s and s.startswith(base_name + "_")]
         if not candidates:
@@ -99,17 +81,11 @@ def build_pairs(all_specs):
 
 
 def extract_inputs(spec):
-    """Return (garbler_bits, evaluator_bits) strings from the spec suffix."""
-    _, _, suffix = parse_spec(spec)
-    parts = suffix.split("_")
+    parts = parse_spec(spec)[2].split("_")
     if len(parts) == 2:
         return parts[0], parts[1]
     return "?", "?"
 
-
-# ---------------------------------------------------------------------------
-# Formatting helpers
-# ---------------------------------------------------------------------------
 
 def avg(vals):
     vals = [v for v in vals if v is not None]
@@ -129,18 +105,15 @@ def fmt(v, decimals=3):
 
 
 def pct_str(baseline, optimized):
-    """Return '+X.XX%' / '-X.XX%' / '' string."""
     if baseline is None or optimized is None or baseline == 0:
         return ""
     pct = (optimized - baseline) / baseline * 100
     if abs(pct) < 0.005:
         return ""
-    sign = "+" if pct > 0 else "-"
-    return f"{sign}{abs(pct):.2f}%"
+    return f"{'+' if pct > 0 else '-'}{abs(pct):.2f}%"
 
 
 def latex_opt_cell(b_val, o_val):
-    """'VALUE ($\\uparrow/\\downarrow$ PCT\\%)' for the optimized LaTeX cell."""
     if b_val is None or o_val is None or b_val == 0:
         return fmt(o_val)
     pct = (o_val - b_val) / b_val * 100
@@ -149,29 +122,19 @@ def latex_opt_cell(b_val, o_val):
 
 
 def metrics(spec, spec_data):
-    """Return dict of display-unit metrics (KB / ms) for a spec, averaged over reps."""
-    def ms(key):
+    """Averages over the repetitions, in KB and ms."""
+    def scaled(key):
         v = avg(spec_data[spec][key])
         return round3(v * 1000) if v is not None else None
-    def kb(key):
-        v = avg(spec_data[spec][key])
-        return round3(v * 1000) if v is not None else None
-    wl  = ms("wl_t")
-    oto = kb("oto")
-    ot  = ms("ot_t")
-    mb  = kb("mb")
-    and_ = ms("and_t")
+    oto = scaled("oto")
+    mb = scaled("mb")
     total = round3(oto + mb) if (oto is not None and mb is not None) else None
-    return {"wl": wl, "oto": oto, "ot": ot, "mb": mb, "and": and_, "total": total}
+    return {"wl": scaled("wl_t"), "oto": oto, "ot": scaled("ot_t"), "mb": mb,
+            "and": scaled("and_t"), "total": total}
 
-
-# ---------------------------------------------------------------------------
-# LaTeX table
-# ---------------------------------------------------------------------------
 
 def generate_latex_table(pairs, spec_data, output_path):
-    I = "    "  # 4-space indent for every inner line
-
+    I = "    "
     lines = [
         r"\begin{tabular}{lcccccccc}",
         I + r"\toprule[1.2pt]",
@@ -208,29 +171,19 @@ def generate_latex_table(pairs, spec_data, output_path):
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"\nLaTeX table written to: {output_path}")
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-BENCHMARK_ORDER = ["INT-div", "INT-mul", "FP-add", "FP-div", "FP-mul", "FP-eq",
-                   "AES", "Encoder", "LiteMIPS"]
+    print(f"\n[i] wrote {output_path}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--log-dir", default=DEFAULT_LOG_DIR)
     parser.add_argument("--tex", action="store_true",
-                        help="also write a LaTeX table to results/results_table.tex")
+                        help="also write results/results_table.tex")
     args = parser.parse_args()
 
-    # Collect per-spec metric lists from log files
     spec_data = defaultdict(lambda: {"oto": [], "mb": [], "and_t": [], "ot_t": [], "wl_t": []})
     for path in sorted(glob.glob(os.path.join(args.log_dir, "*.p0.log"))):
-        fname = os.path.basename(path)
-        m = re.match(r"^(.+)\.rep(\d+)\.p0\.log$", fname)
+        m = re.match(r"^(.+)\.rep(\d+)\.p0\.log$", os.path.basename(path))
         if not m:
             continue
         spec = m.group(1)
@@ -244,32 +197,21 @@ def main():
     pairs = build_pairs(list(spec_data.keys()))
     pairs.sort(key=lambda t: BENCHMARK_ORDER.index(t[0]) if t[0] in BENCHMARK_ORDER else len(BENCHMARK_ORDER))
 
-    # ── Terminal table ──────────────────────────────────────────────────────
-    # Column widths
-    CW = [20, 13, 9, 10, 9, 10, 9, 10]  # Benchmark, G/E, then 6 metric cols
-    METRIC_COLS = 6
-
-    sep = "─" * (sum(CW) + 2 * METRIC_COLS + 2)
+    # benchmark, inputs, then OT label/comm./time, GG comm./eval., total comm.
+    CW = [20, 13, 9, 10, 9, 10, 9, 10]
+    keys = ["wl", "oto", "ot", "mb", "and", "total"]
+    sep = "-" * (sum(CW) + 2 * len(keys) + 2)
 
     def row(*cells):
-        return (
-            f"{cells[0]:<{CW[0]}} {cells[1]:<{CW[1]}}"
-            + "".join(f"  {cells[2 + i]:>{CW[2 + i]}}" for i in range(METRIC_COLS))
-        )
+        return (f"{cells[0]:<{CW[0]}} {cells[1]:<{CW[1]}}"
+                + "".join(f"  {cells[2 + i]:>{CW[2 + i]}}" for i in range(len(keys))))
 
-    # Two-line header (group labels + column labels)
-    grp = (
-        f"{'Benchmark':<{CW[0]}} {'#Inputs':>{CW[1]}}"
-        f"  {'───────── Oblivious Transfer (OT) ─────────':^{CW[2]+CW[3]+CW[4]+4}}"
-        f"  {'──── Garbled Gates (GG) ────':^{CW[5]+CW[6]+2}}"
-        f"  {'Total':>{CW[7]}}"
-    )
-    hdr = row("", "(G/E)", "Label", "Comm.", "Time", "Comm.", "Eval.", "Comm.")
-    sub = row("", "",      "[ms]",  "[KB]",  "[ms]", "[KB]",  "[ms]", "[KB]")
-
-    print(grp)
-    print(hdr)
-    print(sub)
+    print(f"{'Benchmark':<{CW[0]}} {'#Inputs':>{CW[1]}}"
+          f"  {'Oblivious Transfer (OT)':^{CW[2] + CW[3] + CW[4] + 4}}"
+          f"  {'Garbled Gates (GG)':^{CW[5] + CW[6] + 2}}"
+          f"  {'Total':>{CW[7]}}")
+    print(row("", "(G/E)", "Label", "Comm.", "Time", "Comm.", "Eval.", "Comm."))
+    print(row("", "", "[ms]", "[KB]", "[ms]", "[KB]", "[ms]", "[KB]"))
     print(sep)
 
     for base_name, bspec, ospec in pairs:
@@ -281,28 +223,16 @@ def main():
         n_b = len([v for v in spec_data[bspec]["oto"] if v is not None])
         n_o = len([v for v in spec_data[ospec]["oto"] if v is not None])
 
-        keys = ["wl", "oto", "ot", "mb", "and", "total"]
-
         print()
-        print(row(
-            f"{dname} (base, n={n_b})", f"{b_g}/{b_e}",
-            *[fmt(b[k]) for k in keys]
-        ))
-        print(row(
-            f"{'':>{len(dname)}} (opt.,  n={n_o})", f"{o_g}/{o_e}",
-            *[fmt(o[k]) for k in keys]
-        ))
-        print(row(
-            "", "",
-            *[pct_str(b[k], o[k]) for k in keys]
-        ))
+        print(row(f"{dname} (base, n={n_b})", f"{b_g}/{b_e}", *[fmt(b[k]) for k in keys]))
+        print(row(f"{'':>{len(dname)}} (opt.,  n={n_o})", f"{o_g}/{o_e}", *[fmt(o[k]) for k in keys]))
+        print(row("", "", *[pct_str(b[k], o[k]) for k in keys]))
 
     print()
     print(sep)
 
     if args.tex:
-        tex_path = os.path.join(os.path.dirname(os.path.abspath(args.log_dir)),
-                                "results_table.tex")
+        tex_path = os.path.join(os.path.dirname(os.path.abspath(args.log_dir)), "results_table.tex")
         generate_latex_table(pairs, spec_data, tex_path)
 
 

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Build the mockturtle-based synthesis tool and run the circuit optimization
-# experiments that generate optimized Bristol-format circuits.
-# Outputs land in:
-#   mockturtle/experiments/arith_cf_benchmarks/jmc_opt_bristol/
-#   mockturtle/experiments/crypto_gp_benchmarks/jmc_opt_bristol/
+# Builds the synthesis experiments and runs the optimization of both benchmark
+# suites (Tables 1 and 2). Optimized circuits are written to
+# mockturtle/experiments/{arith_cf,crypto_gp}_benchmarks/jmc_opt_bristol/.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -11,51 +9,25 @@ ARTIFACT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MOCKTURTLE_DIR="$ARTIFACT_DIR/mockturtle"
 BUILD_DIR="$MOCKTURTLE_DIR/build"
 
-echo "============================================================"
-echo " Step 1: Build circuit synthesis tool"
-echo "============================================================"
+# Tables 1 and 2, then Table 3 and Section 5.1.3.
+TARGETS="xag_decomp_max_local xag_decomp_kappa_sweep xag_kappa4 xag_kappa6 xag_kappa10 multi_output_mc_check"
+
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
-
 if command -v ninja &>/dev/null; then
-    cmake -G Ninja \
-          -DMOCKTURTLE_BUILD_EXPERIMENTS=ON \
-          -DCMAKE_BUILD_TYPE=Release \
-          .. 2>&1 | tail -5
-    ninja xag_decomp_max_local
+    cmake -G Ninja -DMOCKTURTLE_BUILD_EXPERIMENTS=ON -DCMAKE_BUILD_TYPE=Release .. | tail -5
+    ninja $TARGETS
 else
-    cmake -DMOCKTURTLE_BUILD_EXPERIMENTS=ON \
-          -DCMAKE_BUILD_TYPE=Release \
-          .. 2>&1 | tail -5
-    make xag_decomp_max_local -j"$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)"
+    cmake -DMOCKTURTLE_BUILD_EXPERIMENTS=ON -DCMAKE_BUILD_TYPE=Release .. | tail -5
+    make $TARGETS -j"$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)"
 fi
-echo "[ok] Binary: $BUILD_DIR/experiments/xag_decomp_max_local"
 
-# The binary resolves xag_mc_min_6_db relative to its working directory.
+# the experiments look for the database in the working directory
 cp "$MOCKTURTLE_DIR/experiments/databases/xag_mc_min_6_db" "$BUILD_DIR/"
-
-# Ensure output directories exist.
 mkdir -p "$MOCKTURTLE_DIR/experiments/arith_cf_benchmarks/jmc_opt_bristol"
 mkdir -p "$MOCKTURTLE_DIR/experiments/crypto_gp_benchmarks/jmc_opt_bristol"
 
-echo ""
-echo "============================================================"
-echo " Step 2: Run circuit synthesis (arith_cf and crypto_gp suites)"
-echo "============================================================"
-cd "$BUILD_DIR"
+echo "[i] running xag_decomp_max_local"
 ./experiments/xag_decomp_max_local
 
-echo ""
-echo "[ok] Synthesis complete. Generated circuits:"
-echo "  arith_cf:"
-ls "$MOCKTURTLE_DIR/experiments/arith_cf_benchmarks/jmc_opt_bristol/"
-echo "  crypto_gp:"
-ls "$MOCKTURTLE_DIR/experiments/crypto_gp_benchmarks/jmc_opt_bristol/"
-
-echo ""
-echo "============================================================"
-echo " Step 3: Generate result tables"
-echo "============================================================"
 python3 "$SCRIPT_DIR/gen_synthesis_tables.py"
-echo "[ok] results_arith_cp.tex and results_crypto_gp.tex written to"
-echo "     $MOCKTURTLE_DIR/experiments/"

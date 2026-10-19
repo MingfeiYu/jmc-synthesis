@@ -1,17 +1,7 @@
-###############################################################################
 # Build:  docker build -t jmc-synthesis .
-# Run:    docker run --rm -it jmc-synthesis
+# Run:    docker run --rm -it jmc-synthesis bash /artifact/scripts/run_all.sh [REPETITIONS]
 #
-# Inside the container run the full pipeline:
-#   bash /artifact/scripts/run_all.sh [REPETITIONS]
-#
-# Or step-by-step (see README.md):
-#   bash /artifact/scripts/01_run_synthesis.sh
-#   bash /artifact/scripts/02_copy_circuits.sh
-#   bash /artifact/scripts/03_build_mpc.sh
-#   bash /artifact/scripts/04_run_mpc_eval.sh [REPETITIONS]
-#   bash /artifact/scripts/05_analyze_results.sh
-###############################################################################
+# See README.md for the individual steps.
 
 FROM python:3.10-bullseye
 
@@ -36,7 +26,7 @@ RUN pip install --upgrade pip
 
 WORKDIR /artifact
 
-# ── mockturtle: copy source, build synthesis tool ────────────────────────────
+# synthesis experiments
 COPY mockturtle/ ./mockturtle/
 
 RUN mkdir -p mockturtle/build \
@@ -45,12 +35,13 @@ RUN mkdir -p mockturtle/build \
              -DMOCKTURTLE_BUILD_EXPERIMENTS=ON \
              -DCMAKE_BUILD_TYPE=Release \
              .. \
-    && ninja xag_decomp_max_local \
+    && ninja xag_decomp_max_local xag_decomp_kappa_sweep \
+             xag_kappa4 xag_kappa6 xag_kappa10 multi_output_mc_check \
     && cp ../experiments/databases/xag_mc_min_6_db . \
     && mkdir -p ../experiments/arith_cf_benchmarks/jmc_opt_bristol \
     && mkdir -p ../experiments/crypto_gp_benchmarks/jmc_opt_bristol
 
-# ── MP-SPDZ: copy source, build Yao party binary ─────────────────────────────
+# MP-SPDZ with the Yao party binary
 COPY MP-SPDZ/ ./MP-SPDZ/
 
 RUN cd MP-SPDZ \
@@ -59,7 +50,6 @@ RUN cd MP-SPDZ \
     && echo "MY_LDLIBS += -Wl,-rpath -Wl,/usr/local/lib -L/usr/local/lib" >> CONFIG.mine \
     && make yao-party.x
 
-# ── scripts ───────────────────────────────────────────────────────────────────
 COPY scripts/ ./scripts/
 RUN chmod +x scripts/*.sh
 

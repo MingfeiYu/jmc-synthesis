@@ -1,13 +1,10 @@
-/* Sensitivity of the JMC reduction and of the runtime to the cut-size bound
- * kappa.  Follows `xag_decomp_max_local.cpp`, except that kappa is taken from
- * the command line and that no Bristol files are written.
- *
- * The cut-size bound is a compile-time constant (`JMC_NUM_VARS`); the wrappers
- * `xag_kappa<k>.cpp` instantiate this program for the remaining values of
- * kappa.  The priority-cut budget can be overridden with JMC_CUT_LIMIT.
+/* Cut-size sweep (Table 3).  Same flow as `xag_decomp_max_local.cpp`, with kappa
+ * taken from the command line and without Bristol output.  kappa is a
+ * compile-time constant (`JMC_NUM_VARS`), `xag_kappa<k>.cpp` builds this file
+ * for other values.  JMC_CUT_LIMIT overrides the priority-cut budget.
  *
  * Usage: ./experiments/xag_decomp_kappa_sweep <kappa> [benchmark ...]
- * To be run from the build directory, which must contain `xag_mc_min_6_db`.
+ * from the build directory, which must contain `xag_mc_min_6_db`.
  */
 
 #include <mockturtle/algorithms/xag_decomp_max_local.hpp>

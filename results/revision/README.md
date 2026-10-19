@@ -8,7 +8,7 @@ Data behind §5.1.3 and §6.3 of the paper, produced with the experiments in
 
     ./experiments/xag_decomp_kappa_sweep 8           # kappa = 8
     JMC_CUT_LIMIT=15 ./experiments/xag_decomp_kappa_sweep 8   # kappa = 8*
-    ./experiments/xag_kappa4 4                       # likewise for 6, 10, 12
+    ./experiments/xag_kappa4 4                       # likewise for 6 and 10
 
 - `kappa_sweep.csv`: one row per benchmark and configuration, with the AND and
   joint AND counts before and after optimization, the runtime, and the total
