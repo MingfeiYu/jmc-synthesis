@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
 option(MOCKTURTLE_BUILD_EXPERIMENTS "Build mockturtle experiments" OFF)
+option(MOCKTURTLE_TEST "Build tests" OFF)
 option(BILL_Z3 "Enable Z3 interface for bill library" OFF)
 option(MOCKTURTLE_ENABLE_COVERAGE "Enable coverage reporting for gcc/clang" OFF)
 option(MOCKTURTLE_ENABLE_MATPLOTLIB "Enable matplotlib library in experiments" OFF)
@@ -56,6 +57,11 @@ endif()
 
 if(MOCKTURTLE_BUILD_EXPERIMENTS)
   add_subdirectory(experiments)
+endif()
+
+if(MOCKTURTLE_TEST)
+  enable_testing()
+  add_subdirectory(test)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

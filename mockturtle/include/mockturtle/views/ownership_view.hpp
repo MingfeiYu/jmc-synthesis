@@ -5,6 +5,8 @@
 
 #include <cstdlib>
 
+#include <fmt/format.h>
+
 namespace mockturtle
 {
 
