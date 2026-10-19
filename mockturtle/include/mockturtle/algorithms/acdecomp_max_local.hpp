@@ -14,7 +14,6 @@
 
 namespace mockturtle
 {
-
 class mc_analyzer;
 
 struct acdecomp_max_local_params
@@ -35,15 +34,14 @@ private:
 		uint32_t cost;
 		float sort_cost;
 	};
-	
+
 public:
 	explicit acdecomp_max_local( kitty::dynamic_truth_table const& tt, acdecomp_max_local_params ps )
 		: _tt_orig( tt ),
 		  _num_vars( tt.num_vars() ),
 		  _ps( ps )
 	{}
-	
-	// bool investigate_decomp( uint64_t* const& tt_begin, std::vector<std::vector<uint32_t>> ownerships )
+
 	bool investigate_decomp( std::vector<std::vector<uint32_t>> ownerships )
 	{
 		if ( _num_vars > _ps.max_free_set_size + _ps.lut_size )
@@ -55,9 +53,6 @@ public:
 		{
 			const uint32_t ownerships_i_size = ownerships[i].size();
 
-      /* for debugging */
-      // fmt::print( "[m] Trying to put {} leaves in the free set (max. {})...\n", ownerships_i_size, _ps.max_free_set_size );
-
 			if ( ownerships_i_size > _ps.max_free_set_size )
 			{
 				continue;
@@ -67,95 +62,30 @@ public:
       std::iota( _perm.begin(), _perm.end(), 0u );
 			push_into_free_set( ownerships[i] );
 
-      /* for debugging */
-      // fmt::print( "[m] The original truth table is " );
-      // kitty::print_hex( _tt_orig );
-      // fmt::print( ", the reordered one is " );
-      // kitty::print_hex( _tt_res );
-      // fmt::print( "\n" );
-
 			if ( check_multiplicity( ownerships[i] ) )
 			{
-        /* for debugging */
-        // fmt::print( "[m] Multiplicity is {} (max. {}). A good deal...\n", _multiplicity, ( 1 << ( _ps.lut_size - _free_set_size ) ) );
-
 				return true;
 			}
-      // else
-      // {
-      //   fmt::print( "[m] Multiplicity is {} (max. {}). Miu is too high!\n", _multiplicity, ( 1 << ( _ps.lut_size - _free_set_size ) ) );
-      // }
 		}
-	
+
 		return false;
 	}
-	
+
 	bool compute_decomp()
 	{
 		std::vector<TT> isets = compute_isets();
 		compute_encodings();
-    
+
 		if ( _multiplicity <= 4u )
 		{
 			return solve_encoding_exact( isets );
 		}
-  
+
 		return solve_encoding_heuristic( isets );
-    /* TODO : Conservative solution for now */
-    // return false;
 	}
 
 	void get_decomp()
 	{
-    // /* for debugging */
-    // fmt::print( "[m] Require {} bound set functions, ", _bound_set.size() );
-
-    // _decomp_bs.clear();
-		// for ( uint32_t i = 0u; i < _bound_set.size(); ++i )
-		// {
-		// 	TT tt = _bound_set[i];
-		// 	TT care = _care_set[i];
-		// 	decomp_result decomp_res;
-
-		// 	const uint32_t isets_support_size = _num_vars - _free_set_size;
-		// 	uint32_t k = 0u;
-		// 	for ( uint32_t j = 0u; j < isets_support_size; ++j )
-		// 	{
-		// 		if ( !kitty::has_var( tt, care, j ) )
-		// 		{
-		// 			adjust_tt_on_dc( tt, care, j );
-		// 			continue;
-		// 		}
-
-		// 		if ( k < j )
-		// 		{
-		// 			kitty::swap_inplace( tt, k, j );
-		// 			kitty::swap_inplace( care, k, j );
-		// 		}
-
-		// 		decomp_res.support.push_back( _perm[_free_set_size + j]);
-		// 		++k;
-		// 	}
-		// 	decomp_res.tt = kitty::shrink_to( tt, decomp_res.support.size() );
-
-    //   // assert( !decomp_res.support.empty() );
-    //   if ( decomp_res.support.empty() )
-    //   {
-    //     continue;
-    //   }
-      
-		// 	_decomp_bs.push_back( decomp_res );
-		// }
-
-    // /* for debugging */
-    // fmt::print( "{} bound set functions added\n", _decomp_bs.size() );
-
-		// compute_top_lut();
-
-    /* for debugging */
-    // fmt::print( "[m] Require {} bound set functions.\n", _bound_set.size() );
-    // fmt::print( "[m] Profiling a decomp solution:\n" );
-
     _decomp_bs.clear();
 
     for ( uint32_t i = 0; i < _bound_set.size(); ++i )
@@ -186,32 +116,9 @@ public:
 
       dec.tt = kitty::shrink_to( tt, dec.support.size() );
       _decomp_bs.push_back( dec );
-
-      /* for debugging */
-      // if ( dec.support.size() == 0u )
-      // {
-      //   fmt::print( "[e] Weird, a BS function is without support, the function is " );
-      //   kitty::print_hex( _bound_set[i] );
-      //   fmt::print( "\n" );
-      // }
-      // else
-      // {
-      //   fmt::print( "[m] A BS function is added. Its support is: " );
-      //   for ( auto const& ele : dec.support )
-      //   {
-      //     fmt::print( "{} ", ele );
-      //   }
-      //   fmt::print( "; its function is " );
-      //   kitty::print_hex( dec.tt );
-      //   fmt::print( "\n" );
-      // }
     }
 
-    /* for debugging */
-    // fmt::print( "{} bound set functions added\n", _decomp_bs.size() );
-
     /* compute the decomposition for the top-level LUT */
-    // compute_top_lut();
     compute_top_mux();
 	}
 
@@ -223,7 +130,7 @@ public:
     uint8_t best_sel_polar{};
     bool best_min_mc_mux{};
     bool is_first_solution{ true };
-    uint32_t best_cost{ 0u }; 
+    uint32_t best_cost{ 0u };
 
     if ( _num_vars > _ps.max_free_set_size + _ps.lut_size )
     {
@@ -245,17 +152,8 @@ public:
       pis_ownership_per_pi[element] = 3u;
     }
 
-    /* for debugging */
-    // fmt::print( "[m] Derived per-pi ownership: [ " );
-    // for ( auto const& element : pis_ownership_per_pi )
-    // {
-    //   fmt::print( "{}, ", element );
-    // }
-    // fmt::print( "]\n" );
-
     for ( uint32_t i = 1u; i < ownerships.size(); ++i )
     {
-      // fmt::print ( "[m] Working on the {}/{} partition...\n", i, ( ownerships.size() - 1 ) );
       const uint32_t ownerships_i_size = ownerships[i].size();
       if ( ownerships_i_size > _ps.max_free_set_size || ownerships_i_size == 1u )
 			{
@@ -265,18 +163,13 @@ public:
       std::copy( _tt_orig.begin(), _tt_orig.end(), _tt_res.begin() );
       std::iota( _perm.begin(), _perm.end(), 0u );
 			push_into_free_set( ownerships[i] );
-      // fmt::print( "[m] Finished partitioning... " );
 
       if ( check_multiplicity( ownerships[i] ) )
       {
-        // fmt::print( "Finished computing mu... " );
         std::vector<TT> isets = compute_isets();
         compute_encodings();
 
         bool success_decomp = ( _multiplicity <= 4u ) ? solve_encoding_exact( isets ) : solve_encoding_heuristic( isets );
-        // fmt::print( "Finished deriving encoding!\n" );
-        /* TODO : Conservative solution for now */
-        // bool success_decomp = ( _multiplicity <= 4u ) && solve_encoding_exact( isets );
         if ( !success_decomp )
         {
           continue;
@@ -286,28 +179,9 @@ public:
         if ( is_first_solution )
         {
           assert( _decomp_fs.size() == _multiplicity );
-          // int32_t current_cost = mc_engine.estimate_decomp_res_cost( _decomp_bs, _num_vars, _decomp_fs.size(), pis_ownership_per_pi, i, _multiplicity, _min_mc_mux );
           int32_t current_cost = mc_engine.estimate_decomp_res_cost( _decomp_bs, _num_vars, _decomp_fs.size(), ownerships, i, _multiplicity, _min_mc_mux );
-          /* for debugging */
-          // if ( current_cost >= 0u )
-          // // if ( current_cost > 0u )
-          // {
-          //   fmt::print( "[m] The {}-th decomposition solution: cost is {}\n", i, current_cost );
-          //   for ( auto const& res_each : _decomp_bs )
-          //   {
-          //     fmt::print( "[m] Support: [" );
-          //     for ( auto support_each : res_each.support )
-          //     {
-          //       fmt::print( "node {}; ", support_each );
-          //     }
-          //     fmt::print( "]; TT: " );
-          //     kitty::print_hex( res_each.tt );
-          //     fmt::print( "\n" );
-          //   }
-          // }
 
           if ( current_cost >= 0 )
-          // if ( current_cost > 0u )
           {
             is_first_solution = false;
             best_cost = static_cast<uint32_t>( current_cost );
@@ -317,37 +191,13 @@ public:
             best_sel_polar = _sel_polar;
             best_min_mc_mux = _min_mc_mux;
           }
-          // else
-          // {
-          //   fmt::print( "[e] Warning! Generated a negative cost solution!\n" );
-          // }
         }
         else
         {
           assert( _decomp_fs.size() == _multiplicity );
-          // int32_t current_cost = mc_engine.estimate_decomp_res_cost( _decomp_bs, _num_vars, _decomp_fs.size(), pis_ownership_per_pi, i, _multiplicity, _min_mc_mux );
           int32_t current_cost = mc_engine.estimate_decomp_res_cost( _decomp_bs, _num_vars, _decomp_fs.size(), ownerships, i, _multiplicity, _min_mc_mux );
 
-          /* for debugging */
-          // if ( current_cost >= 0u )
-          // // if ( current_cost > 0u )
-          // {
-          //   fmt::print( "[m] The {}-th decomposition solution: cost is {}\n", i, current_cost );
-          //   for ( auto const& res_each : _decomp_bs )
-          //   {
-          //     fmt::print( "[m] Support: [" );
-          //     for ( auto support_each : res_each.support )
-          //     {
-          //       fmt::print( "node {}; ", support_each );
-          //     }
-          //     fmt::print( "]; TT: " );
-          //     kitty::print_hex( res_each.tt );
-          //     fmt::print( "\n" );
-          //   }
-          // }
-
           if ( ( current_cost >= 0 ) && ( static_cast<uint32_t>( current_cost ) < best_cost ) )
-          // if ( ( current_cost > 0 ) && ( static_cast<uint32_t>( current_cost ) < best_cost ) )
           {
             best_cost = static_cast<uint32_t>( current_cost );
             best_decomp_bs = _decomp_bs;
@@ -356,22 +206,8 @@ public:
             best_sel_polar = _sel_polar;
             best_min_mc_mux = _min_mc_mux;
           }
-          /* for debugging */
-          // else
-          // {
-          //   fmt::print( "[m] The estimated cost of the current decomp solution is too high. Abandoning...\n" );
-          // }
         }
       }
-
-      // if ( i != ( ownerships.size() - 1 ) )
-      // {
-      //   fmt::print( "[m] Next partition...\n" );
-      // }
-      // else
-      // {
-      //   fmt::print( "[m] Explored all partitions...\n" );
-      // }
     }
 
     _decomp_bs = best_decomp_bs;
@@ -380,40 +216,12 @@ public:
     _sel_polar = best_sel_polar;
     _min_mc_mux = best_min_mc_mux;
 
-    // if ( is_first_solution )
-    // {
-    //   fmt::print( "[m] Failed decomposition...\n" );
-    // }
-    // else
-    // {
-    //   fmt::print( "[m] Returning {}...\n", best_cost );
-    // }
-
     return is_first_solution ? -1 : static_cast<int32_t>( best_cost );
   }
 
 private:
 	inline void push_into_free_set( std::vector<uint32_t> const& indices )
 	{
-    // for ( uint32_t i = 0u; i < indices.size(); ++i )
-    // {
-    //   uint32_t ind_i = indices[i];
-    //   /* `ind_i` should stay in `_perm[i]` */
-    //   if ( _perm[i] == ind_i )
-    //   {
-    //     continue;
-    //   }
-
-    //   /* `ind_pos` records where `ind_i` is */
-    //   uint32_t ind_pos = 0u;
-    //   while ( _perm[ind_pos] != ind_i )
-    //   {
-    //     ++ind_pos;
-    //   }
-    //   std::swap( _perm[i], _perm[ind_pos] );
-    //   kitty::swap_inplace( _tt_res, i, ind_pos );
-    // }
-
     uint32_t k = 0u;
     for ( uint32_t i = 0u; i < indices.size(); ++i )
     {
@@ -461,34 +269,6 @@ private:
 	template<uint32_t free_set_size>
 	uint32_t column_multiplicity_le3( TT const& tt )
 	{
-		// uint64_t multiplicity_set[4] = { 0u, 0u, 0u, 0u };
-		// uint32_t multiplicity = 0u;
-		// const uint32_t num_blocks = ( _num_vars > 6u ) ? ( 1u << ( _num_vars - 6u ) ) : 1u ;
-    // const uint32_t len = ( num_blocks == 1u ) ? ( 1 << ( _num_vars - _free_set_size ) ) : ( 64u >> _free_set_size ); 
-		// constexpr uint64_t masks_bits[] = { 0x0, 0x3, 0xF, 0x3F };
-		// constexpr uint64_t masks_indices[] = { 0x0, 0x0, 0x0, 0x3 };
-
-		// for ( uint32_t i = 0u; i < num_blocks; ++i )
-		// {
-		// 	uint64_t coef = tt._bits[i];
-		// 	for ( uint32_t j = 0u; j < len; ++j )
-		// 	{
-		// 		multiplicity_set[( coef >> 6u ) & masks_indices[free_set_size]] |= uint64_t( 1u ) << ( coef & masks_bits[free_set_size] );
-		// 		coef >>= ( 1u << free_set_size );
-		// 	}
-		// }
-
-		// /* TODO : think about optimizing this part */
-		// multiplicity = static_cast<uint32_t>( __builtin_popcountl( multiplicity_set[0] ) );
-		// if ( free_set_size == 3u )
-		// {
-		// 	multiplicity += static_cast<uint32_t>( __builtin_popcountl( multiplicity_set[1] ) );
-		// 	multiplicity += static_cast<uint32_t>( __builtin_popcountl( multiplicity_set[2] ) );
-		// 	multiplicity += static_cast<uint32_t>( __builtin_popcountl( multiplicity_set[3] ) );
-		// }
-
-		// return multiplicity;
-
     uint64_t multiplicity_set[4] = { 0u, 0u, 0u, 0u };
     uint32_t multiplicity = 0;
     uint32_t const num_blocks = ( _num_vars > 6 ) ? ( 1u << ( _num_vars - 6 ) ) : 1;
@@ -496,28 +276,19 @@ private:
     uint64_t constexpr masks_idx[] = { 0x0, 0x0, 0x0, 0x3 };
 
     /* extract iset functions */
-    /* for debugging */
-    // fmt::print( "[m] Figuring out the multiplicity...\n" );
-    const uint32_t len = ( num_blocks == 1u ) ? ( 1 << ( _num_vars - _free_set_size ) ) : ( 64u >> _free_set_size ); 
+    const uint32_t len = ( num_blocks == 1u ) ? ( 1 << ( _num_vars - _free_set_size ) ) : ( 64u >> _free_set_size );
     for ( auto i = 0u; i < num_blocks; ++i )
     {
       uint64_t cof = tt._bits[i];
       for ( auto j = 0; j < len; ++j )
       {
         uint64_t& repr = multiplicity_set[( cof >> 6 ) & masks_idx[_free_set_size]];
-        // uint64_t temp = repr;
         repr |= ( uint64_t( 1 ) << ( cof & masks_bits[_free_set_size] ) );
-        // if ( repr != temp )
-        // {
-        //   fmt::print( "[m] new pattern ({}) detected, increasing multiplicity...\n", ( cof & masks_bits[_free_set_size] ) );
-        // }
         cof >>= ( 1u << _free_set_size );
       }
     }
 
     multiplicity = __builtin_popcountl( multiplicity_set[0] );
-
-    // fmt::print( "[m] The multiplicity is calculated to be {}\n", multiplicity );
 
     if ( _free_set_size == 3 )
     {
@@ -538,7 +309,7 @@ private:
 		uint32_t multiplicity_set_size = 0u;
 
 		uint64_t fs_func_prev = UINT64_MAX;
-    const uint32_t len = ( num_blocks == 1u ) ? ( 1 << ( _num_vars - _free_set_size ) ) : ( 64u >> _free_set_size ); 
+    const uint32_t len = ( num_blocks == 1u ) ? ( 1 << ( _num_vars - _free_set_size ) ) : ( 64u >> _free_set_size );
 		for ( uint32_t i = 0u; i < num_blocks; ++i )
 		{
 			uint64_t coef = tt._bits[i];
@@ -570,64 +341,6 @@ private:
 
 	std::vector<TT> compute_isets()
 	{
-		// const uint32_t isets_support_size = _num_vars - _free_set_size;
-		// std::vector<TT> isets( _multiplicity );
-		// std::unordered_map<uint64_t, uint32_t> column_to_iset;
-		// TT tt = _tt_res;
-		// uint32_t offset = 0u;
-		// uint32_t num_blocks = ( _num_vars > 6u ) ? ( 1u << ( _num_vars - 6u) ) : 1u;
-		// constexpr uint64_t masks[] = { 0x0, 0x3, 0xF, 0xFF, 0xFFFF, 0xFFFFFFFF };
-
-		// auto it = std::begin( tt );
-		// for ( uint32_t i = 0u; i < num_blocks; ++i )
-		// {
-		// 	for ( uint32_t j = 0u; j < ( 64u >> _free_set_size ); ++j )
-		// 	{
-		// 		uint64_t val = *it & masks[_free_set_size];
-		// 		auto el = column_to_iset.find( val );
-		// 		if ( el != column_to_iset.end() )
-		// 		{
-		// 			isets[el->second]._bits[i / ( 1u << _free_set_size )] != ( uint64_t( 1u ) << ( j + offset ) );
-		// 		}
-		// 		else
-		// 		{
-		// 			isets[column_to_iset.size()]._bits[i / ( 1u << _free_set_size )] |= ( uint64_t( 1u ) << ( j + offset ) );
-		// 			column_to_iset[val] = column_to_iset.size();
-		// 		}
-
-		// 		*it >>= ( 1u << _free_set_size );
-		// 	}
-
-		// 	offset = ( offset + ( 64u >> _free_set_size ) ) & 0x3F;
-		// 	++it;
-		// }
-
-		// for ( TT& iset : isets )
-		// {
-		// 	tt_expansion( iset, isets_support_size );
-		// }
-
-    // _free_set.clear();
-    // _free_set.resize( _multiplicity );
-		// for ( auto const& pair : column_to_iset )
-		// {
-		// 	_free_set[pair.second]._bits[0] = pair.first;
-		// 	tt_expansion( _free_set[pair.second], _free_set_size );
-		// }
-
-    /* for debugging */
-    // {
-    //   fmt::print( "[m] isets:\n" );
-    //   uint32_t i = 0u;
-    //   for ( auto iset : isets )
-    //   {
-    //     kitty::print_hex( iset );
-    //     fmt::print( " of func " );
-    //     kitty::print_hex( _free_set[i++] );
-    //     fmt::print( "\n" );
-    //   }
-    // }
-
     /* construct isets involved in multiplicity */
     uint32_t isets_support = _num_vars - _free_set_size;
     std::vector<TT> isets( _multiplicity );
@@ -640,7 +353,7 @@ private:
     uint64_t constexpr masks[] = { 0x0, 0x3, 0xF, 0xFF, 0xFFFF, 0xFFFFFFFF };
 
     auto it = std::begin( tt );
-    const uint32_t len = ( num_blocks == 1u ) ? ( 1 << ( _num_vars - _free_set_size ) ) : ( 64u >> _free_set_size ); 
+    const uint32_t len = ( num_blocks == 1u ) ? ( 1 << ( _num_vars - _free_set_size ) ) : ( 64u >> _free_set_size );
     for ( auto i = 0u; i < num_blocks; ++i )
     {
       for ( auto j = 0; j < len; ++j )
@@ -683,15 +396,6 @@ private:
 
     _free_set = std::move( free_set_tts );
 
-    /* for debugging */
-    // fmt::print( "[m] isets: \n" );
-    // for ( auto i = 0u; i < isets.size(); ++i )
-    // {
-    //   fmt::print( "[m] The {}-th iset is ", ( i + 1 ) );
-    //   kitty::print_hex( isets[i] );
-    //   fmt::print( "\n" );
-    // }
-
 		return isets;
 	}
 
@@ -720,57 +424,6 @@ private:
 
 	void compute_encodings()
 	{
-		// uint32_t count = 0, num_combs = 0u;
-		// if ( __builtin_popcount( _multiplicity ) == 1 )
-		// {
-		// 	uint32_t num_combs_enum[4] = { 1u, 3u, 35u, 6435u };
-		// 	for ( uint32_t i = 0u; i < 4u; ++i )
-		// 	{
-		// 		if ( ( _multiplicity >> i ) == 2u )
-		// 		{
-		// 			num_combs = num_combs_enum[i];
-		// 		}
-		// 	}
-		// 	_min_support_encodings = std::vector<std::array<uint32_t, 2u>>( num_combs );
-		// 	compute_encodings_rec<false, true>( 0u, 0u, 0u, count, _multiplicity >> 1u, true );
-		// 	assert( count == num_combs );
-		// 	return;
-		// }
-
-		// /* constrian the number of offset classes to guanrantee a strict encoding */
-		// int32_t min_num_isets = 0;
-		// if ( _multiplicity <= 4u )
-		// {
-		// 	min_num_isets = 2;
-		// }
-		// else if ( _multiplicity <= 8u )
-		// {
-		// 	min_num_isets = 4;
-		// }
-		// else
-    // {
-		// 	min_num_isets = 8;
-		// }
-		// min_num_isets = _multiplicity - min_num_isets;
-		
-		// /* exploit don't-cares when `_multiplicity` is not a power of two and no larger than eight */
-		// if ( _multiplicity > 8u )
-		// {
-		// 	uint32_t class_sizes[13] = { 3, 3, 15, 25, 35, 35, 255, 501, 957, 1749, 3003, 4719, 6435 };
-		// 	num_combs = class_sizes[_multiplicity - 3];
-		// 	_min_support_encodings = std::vector<std::array<uint32_t, 2u>>( num_combs );
-		// 	compute_encodings_rec<false, false>( 0u, 0u, 0u, count, min_num_isets, true );
-		// }
-		// else
-		// {
-		// 	uint32_t class_sizes[13] = { 6, 3, 90, 130, 105, 35, 9330, 23436, 48708, 78474, 91377, 70785, 32175 };
-		// 	num_combs = class_sizes[_multiplicity - 3];
-		// 	_min_support_encodings = std::vector<std::array<uint32_t, 2u>>( num_combs );
-		// 	compute_encodings_rec<true, false>( 0u, 0u, 0u, count, min_num_isets, true );
-		// }
-		
-		// assert( count == num_combs );
-
     uint32_t count = 0;
 
     /* enable don't cares only if not a power of 2 */
@@ -788,11 +441,10 @@ private:
       _min_support_encodings = std::vector<std::array<uint32_t, 2>>( num_combs );
       compute_encodings_rec<false, true>( 0, 0, 0, count, _multiplicity >> 1, true );
       assert( count == num_combs );
-      // fmt::print( "[m] generated {} encoding combs\n", count );
       return;
     }
 
-    /* constraint the number of offset classes for a strict encoding */
+    /* constrain the number of offset classes for a strict encoding */
     int32_t min_set_size = 1;
     if ( _multiplicity <= 4 )
       min_set_size = 2;
@@ -820,50 +472,11 @@ private:
     }
 
     assert( count == num_combs );
-    // fmt::print( "[m] generated {} encoding combs\n", count );
 	}
 
 	template<bool enable_dc, bool equal_size_partition>
 	void compute_encodings_rec( uint32_t onset, uint32_t offset, uint32_t iset_index, uint32_t& count, int32_t min_num_isets, bool is_first )
 	{
-		// if ( iset_index == _multiplicity )
-		// {
-		// 	if ( equal_size_partition )
-		// 	{
-		// 		if ( __builtin_popcount( onset ) != __builtin_popcount( offset ) )
-		// 		{
-		// 			return;
-		// 		}
-		// 	}
-		// 	else if ( __builtin_popcount( onset ) < min_num_isets || __builtin_popcount( offset ) < min_num_isets )
-		// 	{
-		// 		return;
-		// 	}
-
-		// 	_min_support_encodings[count][0] = onset;
-		// 	_min_support_encodings[count][1] = offset;
-		// 	++count;
-		// 	return;
-		// }
-
-		// if ( enable_dc )
-		// {
-		// 	compute_encodings_rec<enable_dc, equal_size_partition>( onset, offset, iset_index + 1, count, min_num_isets, is_first );
-		// }
-
-		// onset |= uint32_t( 1u ) << iset_index;
-		// compute_encodings_rec<enable_dc, equal_size_partition>( onset, offset, iset_index + 1, count, min_num_isets, false );
-		// onset &= ~( uint32_t( 1u ) << iset_index );
-
-		// if ( is_first )
-		// {
-		// 	return;
-		// }
-
-		// offset |= uint32_t( 1u ) << iset_index;
-		// compute_encodings_rec<enable_dc, equal_size_partition>( onset, offset, iset_index + 1, count, min_num_isets, false );
-		// offset &= ~( uint32_t( 1u ) << iset_index );
-
     if ( iset_index == _multiplicity )
     {
       if ( equal_size_partition )
@@ -883,9 +496,6 @@ private:
       _min_support_encodings[count][0] = onset;
       _min_support_encodings[count][1] = offset;
       ++count;
-
-      /* for debugging */
-      // fmt::print( "[m] Adding the {}th code: onset is {}, offset is {}.\n", count, onset, offset );
 
       return;
     }
@@ -915,54 +525,11 @@ private:
 
 	bool solve_encoding_exact( std::vector<TT> const& isets )
 	{
-		// std::vector<encoding_column> matrix;
-		// matrix.reserve( _min_support_encodings.size() );
-		// create_covering_matrix<false>( isets, matrix, false );
-
-		// /* `solution[5]` stores the bound set size */
-		// std::array<uint32_t, 6u> solution = solve_covering_exact( matrix );
-		// if ( solution[0] == UINT32_MAX )
-		// {
-		// 	return false;
-		// }
-
-		// _bound_set.clear();
-		// _care_set.clear();
-		// _isets_onset.clear();
-		// _isets_offset.clear();
-
-		// for ( uint32_t i = 0u; i < solution[5]; ++i )
-		// {
-		// 	TT tt, care;
-		// 	const uint32_t onset = _min_support_encodings[matrix[solution[i]].index][0];
-		// 	const uint32_t offset = _min_support_encodings[matrix[solution[i]].index][1];
-		// 	for ( uint32_t j = 0u; j < _multiplicity; ++j)
-		// 	{
-		// 		if ( ( onset >> j ) & 1 )
-		// 		{
-		// 			tt |= isets[j];
-		// 		}
-		// 		if ( ( offset >> j ) & 1 )
-		// 		{
-		// 			care |= isets[j];
-		// 		}
-		// 	}
-		// 	care |= tt;
-
-		// 	_bound_set.push_back( tt );
-		// 	_care_set.push_back( care );
-		// 	_isets_onset.push_back( onset );
-		// 	_isets_offset.push_back( offset );
-		// }
-
-		// return true;
-
     std::vector<encoding_column> matrix;
     matrix.reserve( _min_support_encodings.size() );
     _bound_set.clear();
 
     /* create covering matrix */
-    // fmt::print( "[m] Exactly creating the matrix without sorting...\n" );
     create_covering_matrix<false>( isets, matrix, false );
     if ( matrix.size() == 0u )
     {
@@ -983,13 +550,10 @@ private:
     _care_set.clear();
     _isets_onset.clear();
     _isets_offset.clear();
-    // fmt::print( "[m] `_min_support_encodings` size is {}\n", _min_support_encodings.size() );
     for ( uint32_t i = 0; i < solution[5]; ++i )
     {
       TT tt;
       TT care;
-
-      // fmt::print( "[m] `matrix[solution[{}]].index` is {}\n", i, matrix[solution[i]].index );
 
       const uint32_t onset = _min_support_encodings[matrix[solution[i]].index][0];
       const uint32_t offset = _min_support_encodings[matrix[solution[i]].index][1];
@@ -1012,79 +576,13 @@ private:
       _care_set.push_back( care );
       _isets_onset.push_back( onset );
       _isets_offset.push_back( offset );
-
-      /* for debugging */
-      // fmt::print( "[m] A raw BS function: " );
-      // kitty::print_hex( tt );
-      // fmt::print( "\n" );
     }
-
-    /* for debugging */
-    // fmt::print( "[m] #BS functions = {}; #FS functions = {}\n", _bound_set.size(), _free_set.size() );
-    // fmt::print( "[m] `_isets_onset` contains: " );
-    // for ( auto const& ele : _isets_onset )
-    // {
-    //   fmt::print( "{:0{}b} ", ele, _free_set.size() );
-    // }
-    // fmt::print( "\n" );
-    // fmt::print( "[m] `_isets_offset` contains: " );
-    // for ( auto const& ele : _isets_offset )
-    // {
-    //   fmt::print( "{:0{}b} ", ele, _free_set.size() );
-    // }
-    // fmt::print( "\n" );
 
     return true;
 	}
 
 	bool solve_encoding_heuristic( std::vector<TT> const& isets )
 	{
-		// std::vector<encoding_column> matrix;
-		// matrix.reserve( _min_support_encodings.size() );
-		// create_covering_matrix<true>( isets, matrix, true );
-
-		// /* `solution[5]` stores the bound set size */
-		// std::array<uint32_t, 6u> solution = solve_covering_heuristic( matrix );
-		// if ( solution[0] == UINT32_MAX )
-		// {
-		// 	return false;
-		// }
-
-		// /* improve each solution entry by looking for a better choice */
-		// while ( improve_covering( matrix, solution ) )
-		// {}
-
-		// _bound_set.clear();
-		// _care_set.clear();
-		// _isets_onset.clear();
-		// _isets_offset.clear();
-
-		// for ( uint32_t i = 0u; i < solution[5]; ++i )
-		// {
-		// 	TT tt, care;
-		// 	const uint32_t onset = _min_support_encodings[matrix[solution[i]].index][0];
-		// 	const uint32_t offset = _min_support_encodings[matrix[solution[i]].index][1];
-		// 	for ( uint32_t j = 0u; j < _multiplicity; ++j)
-		// 	{
-		// 		if ( ( onset >> j ) & 1 )
-		// 		{
-		// 			tt |= isets[j];
-		// 		}
-		// 		if ( ( offset >> j ) & 1 )
-		// 		{
-		// 			care |= isets[j];
-		// 		}
-		// 	}
-		// 	care |= tt;
-
-		// 	_bound_set.push_back( tt );
-		// 	_care_set.push_back( care );
-		// 	_isets_onset.push_back( onset );
-		// 	_isets_offset.push_back( offset );
-		// }
-
-		// return true;
-
     std::vector<encoding_column> matrix;
     matrix.reserve( _min_support_encodings.size() );
     _bound_set.clear();
@@ -1137,108 +635,12 @@ private:
       _isets_offset.push_back( offset );
     }
 
-    /* for debugging */
-    // fmt::print( "[m] #BS functions = {}; #FS functions = {}\n", _bound_set.size(), _free_set.size() );
-    // fmt::print( "[m] `_isets_onset` contains: " );
-    // for ( auto const& ele : _isets_onset )
-    // {
-    //   fmt::print( "{:0{}b} ", ele, _free_set.size() );
-    // }
-    // fmt::print( "\n" );
-    // fmt::print( "[m] `_isets_offset` contains: " );
-    // for ( auto const& ele : _isets_offset )
-    // {
-    //   fmt::print( "{:0{}b} ", ele, _free_set.size() );
-    // }
-    // fmt::print( "\n" );
-
     return true;
 	}
 
 	template<bool use_heuristic>
 	void create_covering_matrix( std::vector<TT> const& isets, std::vector<encoding_column>& matrix, bool sort )
 	{
-		// uint32_t num_combs = ( _multiplicity * ( _multiplicity - 1u ) ) / 2;
-		// const uint32_t isets_support_size = _num_vars - _free_set_size;
-
-		// /* insert dichotomies */
-		// for ( uint32_t i = 0u; i < _min_support_encodings.size(); ++i )
-		// {
-		// 	const uint32_t onset = _min_support_encodings[i][0];
-		// 	const uint32_t offset = _min_support_encodings[i][1];
-		// 	uint64_t column[2] = { 0u, 0u };
-		// 	TT tt, care;
-		// 	uint32_t pair_pointer = 0u;
-		// 	for ( uint32_t j = 0u; j < _multiplicity; ++j )
-		// 	{
-		// 		uint32_t onset_shift = ( onset >> j );
-		// 		uint32_t offset_shift = ( offset >> j );
-		// 		if ( onset_shift & 1 )
-		// 		{
-		// 			tt |= isets[j];
-		// 		}
-		// 		if ( offset_shift & 1 )
-		// 		{
-		// 			care |= isets[j];
-		// 		}
-
-		// 		for ( uint32_t k = j + 1u; k < _multiplicity; ++k )
-		// 		{
-		// 			if ( ( ( onset_shift & ( offset >> k ) ) | ( ( offset_shift & ( onset >> k ) ) ) ) & 1 )
-		// 			{
-		// 				column[pair_pointer >> 6u] |= ( uint64_t( 1u ) << ( pair_pointer & 0x3F ) );
-		// 			}
-		// 			++pair_pointer;
-		// 		}
-		// 	}
-
-		// 	care |= tt;
-
-		// 	uint32_t cost = 0u;
-		// 	for ( uint32_t j = 0u; j < isets_support_size; ++j )
-		// 	{
-		// 		cost += is_in_support( tt, care, isets_support_size, j ) ? 1u : 0u;
-		// 	}
-		// 	if ( cost > _ps.lut_size )
-		// 	{
-		// 		continue;
-		// 	}
-		// 	if ( cost == 1u )
-		// 	{
-		// 		cost = 0u;
-		// 	}
-
-		// 	float sort_cost = 0.;
-		// 	if ( use_heuristic )
-		// 	{
-		// 		sort_cost = 1.0f / ( __builtin_popcountl( column[0] ) + __builtin_popcountl( column[1] ) );
-		// 	}
-		// 	else
-		// 	{
-		// 		sort_cost = cost + ( ( num_combs - __builtin_popcountl( column[0] ) + __builtin_popcountl( column[1] ) ) << _num_vars );
-		// 	}
-
-		// 	matrix.emplace_back( encoding_column{ { column[0], column[1] }, i, cost, sort_cost } );
-		// }
-
-		// if ( !sort )
-		// {
-		// 	return;
-		// }
-
-		// if ( use_heuristic )
-		// {
-		// 	std::sort( matrix.begin(),  matrix.end(), [&]( encoding_column const& a, encoding_column const& b ){
-		// 		return a.cost < b.cost;
-		// 	} );
-		// }
-		// else
-		// {
-		// 	std::sort( matrix.begin(), matrix.end(), [&]( encoding_column const& a, encoding_column const& b) {
-		// 		return a.sort_cost < b.sort_cost;
-		// 	} );
-		// }
-
     uint32_t combinations = ( _multiplicity * ( _multiplicity - 1 ) ) / 2;
     uint32_t iset_support = _num_vars - _free_set_size;
 
@@ -1270,7 +672,7 @@ private:
         /* compute included seed dichotomies */
         for ( uint32_t k = j + 1; k < _multiplicity; ++k )
         {
-          /* if are in diffent sets */
+          /* if in different sets */
           if ( ( ( ( onset_shift & ( offset >> k ) ) | ( ( onset >> k ) & offset_shift ) ) & 1 ) )
           {
             column[pair_pointer >> 6u] |= UINT64_C( 1 ) << ( pair_pointer & 0x3F );
@@ -1287,21 +689,7 @@ private:
       for ( uint32_t j = 0; j < iset_support; ++j )
       {
         cost += ( kitty::has_var( tt, care, j ) ? 1 : 0 );
-        // cost += is_in_support( tt, care, iset_support, j ) ? 1 : 0;
-        // if ( !has_var_support( tt, care, iset_support, j ) )
-        // {
-        //   /* adjust truth table and care set */
-        //   adjust_truth_table_on_dc( tt, care, iset_support, j );
-        //   continue;
-        // }
-        // ++cost;
       }
-
-      // if ( cost == 0u )
-      // {
-      //   /* must has at least one support */
-      //   cost = UINT32_MAX;
-      // }
 
       /* discard solutions with support over LUT size */
       if ( cost > _ps.lut_size )
@@ -1309,7 +697,7 @@ private:
         fmt::print( "[m] requires too many supports ({} vs. {})! Skipping...\n", cost, _ps.lut_size );
         continue;
       }
-      
+
       /* buffers have zero cost */
       if ( cost == 1 )
         cost = 0;
@@ -1326,7 +714,6 @@ private:
 
       /* insert */
       matrix.emplace_back( encoding_column{ { column[0], column[1] }, i, cost, sort_cost } );
-      // fmt::print( "[m] Inserted a matrix entry whose index is {}\n", matrix.back().index );
     }
 
     if ( !sort )
@@ -1348,90 +735,12 @@ private:
     }
 	}
 
-	bool is_in_support( TT const& tt, TT const& care, uint32_t num_vars_local, uint8_t var_index )
-	{
-		// assert( var_index < num_vars_local );
-		// assert( num_vars_local <= tt.num_vars() );
-		// assert( tt.num_vars() == care.num_vars() );
-
-		// const uint32_t num_blocks = ( num_vars_local <= 6u ) ? 1u : ( 1u << ( num_vars_local - 6u ) ); 
-		// if ( num_vars_local <= 6u || var_index < 6u )
-		// {
-		// 	auto it_tt = std::begin( tt._bits );
-		// 	auto it_care = std::begin( care._bits );
-		// 	while ( it_tt != ( std::begin( tt._bits ) + num_blocks ) )
-		// 	{
-		// 		if ( ( ( ( *it_tt >> ( uint64_t( 1 ) << var_index ) ) ^ *it_tt ) &
-    //            kitty::detail::projections_neg[var_index] &
-    //            ( *it_care >> ( uint64_t( 1 ) << var_index ) ) & *it_care ) != 0 )
-		// 		{
-		// 			return true;
-		// 		}
-		// 		++it_tt;
-		// 		++it_care;
-		// 	}
-
-		// 	return false;
-		// }
-
-		// const uint32_t step = 1u << ( var_index - 6u );
-		// for ( uint32_t i = 0u; i < num_blocks; i += 2 * step )
-		// {
-		// 	for ( uint32_t j = 0u; j < step; ++j )
-		// 	{
-		// 		if ( ( ( tt._bits[i + j] ^ tt._bits[i + j + step] ) &
-    //            care._bits[i + j] & care._bits[i + j + step] ) != 0 )
-		// 		{
-		// 			return true;
-		// 		}
-		// 	}
-		// }
-
-		// return false;
-
-    assert( var_index < num_vars_local );
-    assert( num_vars_local <= tt.num_vars() );
-    assert( tt.num_vars() == care.num_vars() );
-
-    const uint32_t num_blocks = num_vars_local <= 6 ? 1 : ( 1 << ( num_vars_local - 6 ) );
-    if ( num_vars_local <= 6 || var_index < 6 )
-    {
-      auto it_tt = std::begin( tt._bits );
-      auto it_care = std::begin( care._bits );
-      while ( it_tt != std::begin( tt._bits ) + num_blocks )
-      {
-        if ( ( ( ( *it_tt >> ( uint64_t( 1 ) << var_index ) ) ^ *it_tt ) & kitty::detail::projections_neg[var_index] & ( *it_care >> ( uint64_t( 1 ) << var_index ) ) & *it_care ) != 0 )
-        {
-          return true;
-        }
-        ++it_tt;
-        ++it_care;
-      }
-
-      return false;
-    }
-
-    const auto step = 1 << ( var_index - 6 );
-    for ( auto i = 0u; i < num_blocks; i += 2 * step )
-    {
-      for ( auto j = 0; j < step; ++j )
-      {
-        if ( ( ( tt._bits[i + j] ^ tt._bits[i + j + step] ) & care._bits[i + j] & care._bits[i + j + step] ) != 0 )
-        {
-          return true;
-        }
-      }
-    }
-
-    return false;
-	}
-
 	std::array<uint32_t, 6u> solve_covering_exact( std::vector<encoding_column> const& matrix )
 	{
 		std::array<uint32_t, 6u> solution = { UINT32_MAX };
 		uint32_t best_cost = UINT32_MAX;
 		uint32_t num_combs = ( _multiplicity * ( _multiplicity - 1u ) ) / 2;
-		
+
 		if ( _multiplicity <= 2u )
 		{
 			solution[5] = 1u;
@@ -1538,7 +847,6 @@ private:
 		/* for each currently selected column, look for a lower-cost alternative */
 		for ( uint32_t i = 0u; i < num_elements; ++i )
 		{
-			// current_cost = 0u;
 			current_cost = best_cost - matrix[solution[i]].cost;
 			column0 = 0u;
 			column1 = 0u;
@@ -1549,7 +857,6 @@ private:
 				{
 					continue;
 				}
-				// current_cost += matrix[solution[j]].cost;
 				column0 |= matrix[solution[j]].column[0];
 				column1 |= matrix[solution[j]].column[1];
 			}
@@ -1572,195 +879,10 @@ private:
 
 		return improved;
 	}
-	
-	void compute_top_lut()
-	{
-    const uint32_t num_top_vars = _decomp_bs.size() + _free_set.size();
-		assert( num_top_vars <= _ps.lut_size );
-    kitty::dynamic_truth_table tt( num_top_vars );
-    std::vector<kitty::dynamic_truth_table> fs_vars{};
-    std::vector<uint32_t> free_set_vars( _free_set_size );
-    _decomp_fs.clear();
-    _decomp_fs.resize( _free_set.size() );
-    decomp_result decomp_res;
-
-    for ( auto i{ 0u }; i < _free_set_size; ++i )
-    {
-      free_set_vars[i] = _perm[i];
-    }
-
-    /* determine `_decomp_fs` */
-    for ( auto i{ 0u }; i < _free_set.size(); ++i )
-    {
-      decomp_result dec;
-      dec.support = free_set_vars;
-      auto tt = _free_set[i];
-      dec.tt = kitty::shrink_to( tt, _free_set_size );
-      _decomp_fs[i] = dec;
-      fs_vars.emplace_back( num_top_vars );
-      kitty::create_nth_var( fs_vars[i], i );
-      decomp_res.support.push_back( _num_vars + i );
-      /* TODO : Skip trivial cases? */
-    }
-
-    /* for debugging */
-    // fmt::print( "[m] Top LUT support size is {}\n", num_top_vars );
-
-		// kitty::dynamic_truth_table tt( num_top_vars );
-    
-		// for ( uint32_t i = 0u; i < _free_set_size; ++i )
-		// {
-		// 	decomp_res.support.push_back( _perm[i] );
-		// }
-
-		std::vector<kitty::dynamic_truth_table> bs_vars;
-		uint32_t offset = 0u;
-    std::vector<uint32_t> ss_ind;
-
-		for ( uint32_t i = 0u; i < _decomp_bs.size(); ++i )
-		{
-			decomp_result const& decomp_res_i = _decomp_bs[i];
-			bs_vars.emplace_back( num_top_vars );
-			kitty::create_nth_var( bs_vars[i], _free_set.size() + i );
-
-      /* for debugging */
-      // fmt::print( "[m] The {}th BS function's support size is {}\n", ( i + 1 ), decomp_res_i.support.size() );
-
-			/* Add BS variables to the support of `decomp_res` */
-			/* remove trivial BS function (buffer) */
-			if ( decomp_res_i.support.size() == 1u )
-			{
-				decomp_res.support.push_back( decomp_res_i.support[0] );
-				if ( decomp_res_i.tt._bits[0] & 1 )
-				{
-					bs_vars[i] = ~bs_vars[i];
-				}
-				// _decomp_bs.erase( _decomp_bs.begin() + i );
-        ss_ind.push_back( i );
-        ++offset;
-
-        /* for debugging */
-        // fmt::print( "[m] Has a trivial BS function, removed.\n" );
-			}
-			else
-			{
-				// decomp_res.support.push_back( _num_vars + i - offset );
-        decomp_res.support.push_back( _num_vars + _free_set.size() + i - offset );
-			}
-		}
-    
-    for ( auto it = ss_ind.rbegin(); it != ss_ind.rend(); ++it )
-    {
-      _decomp_bs.erase( _decomp_bs.begin() + *it );
-    }
-
-		// for ( uint32_t i = 0u; i < _free_set.size(); ++i )
-    for ( auto i{ 0u }; i < fs_vars.size(); ++i )
-		{
-			// kitty::dynamic_truth_table fs_tt = kitty::shrink_to( _free_set[i], num_top_vars );
-      kitty::dynamic_truth_table fs_tt = fs_vars[i];
-			
-			for ( uint32_t j = 0u; j < bs_vars.size(); ++j )
-			{
-				if ( ( _isets_onset[j] >> i ) & 1 )
-				{
-					fs_tt &= bs_vars[j];
-					continue;
-				}
-				if ( ( _isets_offset[j] >> i ) & 1 )
-				{
-					fs_tt &= ~bs_vars[j];
-				}
-			}
-
-			tt |= fs_tt;
-		}
-
-		decomp_res.tt = tt;
-		_decomp_bs.push_back( decomp_res );
-
-    /* for debugging */
-    // fmt::print( "[m] Supports of the top LUT are the " );
-    // for ( auto const& each_sup : decomp_res.support )
-    // {
-    //   fmt::print( "{}th ", each_sup );
-    // }
-    // fmt::print( "signals\n" );
-
-    /* for debugging */
-    // if ( ( _decomp_bs.size() - 1 ) != _bound_set.size() )
-
-    // uint32_t top_vars = _bound_set.size() + _free_set_size;
-    // assert( top_vars <= _ps.lut_size );
-
-    // /* extend bound set functions with free_set_size LSB vars */
-    // kitty::dynamic_truth_table tt( top_vars );
-
-    // /* compute support */
-    // _decomp_bs.emplace_back();
-    // for ( uint32_t i = 0; i < _free_set_size; ++i )
-    // {
-    //   _decomp_bs.back().support.push_back( _perm[i] );
-    // }
-
-    // /* create functions for bound set */
-    // std::vector<kitty::dynamic_truth_table> bound_set_vars;
-    // auto res_it = _decomp_bs.begin();
-    // uint32_t offset = 0;
-    // for ( uint32_t i = 0; i < _bound_set.size(); ++i )
-    // {
-    //   bound_set_vars.emplace_back( top_vars );
-    //   kitty::create_nth_var( bound_set_vars[i], _free_set_size + i );
-
-    //   /* add bound-set variables to the support, remove buffers (shared set) */
-    //   if ( res_it->support.size() == 1 )
-    //   {
-    //     _decomp_bs.back().support.push_back( res_it->support.front() );
-    //     /* it is a NOT */
-    //     if ( ( res_it->tt._bits[0] & 1 ) == 1 )
-    //     {
-    //       bound_set_vars[i] = ~bound_set_vars[i];
-    //     }
-    //     _decomp_bs.erase( res_it );
-    //     ++offset;
-    //   }
-    //   else
-    //   {
-    //     _decomp_bs.back().support.push_back( _num_vars + i - offset );
-    //     ++res_it;
-    //   }
-    // }
-
-    // /* create composition function */
-    // for ( uint32_t i = 0; i < _free_set.size(); ++i )
-    // {
-    //   kitty::dynamic_truth_table free_set_tt = kitty::shrink_to( _free_set[i], top_vars );
-
-    //   /* find MUX assignments */
-    //   for ( uint32_t j = 0; j < bound_set_vars.size(); ++j )
-    //   {
-    //     /* AND with ONSET or OFFSET */
-    //     if ( ( ( _isets_onset[j] >> i ) & 1 ) )
-    //     {
-    //       free_set_tt &= bound_set_vars[j];
-    //     }
-    //     else if ( ( ( _isets_offset[j] >> i ) & 1 ) )
-    //     {
-    //       free_set_tt &= ~bound_set_vars[j];
-    //     }
-    //   }
-
-    //   tt |= free_set_tt;
-    // }
-
-    // /* add top-level LUT to result */
-    // _decomp_bs.back().tt = tt;
-	}
 
   void compute_top_mux()
 	{
     const uint32_t num_top_vars = _decomp_bs.size() + _free_set.size();
-    // const bool comput_mux = ( num_top_vars <= _ps.lut_size );
     /* always consider heuristic top MUX construction */
     const bool comput_mux = false;
     decomp_result decomp_res;
@@ -1770,13 +892,10 @@ private:
     _sel_polar = 0u;
 
     std::vector<uint32_t> free_set_vars( _free_set_size );
-    // fmt::print( "[m] FS variables are: " );
     for ( auto i{ 0u }; i < _free_set_size; ++i )
     {
       free_set_vars[i] = _perm[i];
-      // fmt::print( "node {}; ", free_set_vars[i] );
     }
-    // fmt::print( "\n" );
 
     /* determine `_decomp_fs` */
     for ( auto i{ 0u }; i < _free_set.size(); ++i )
@@ -1789,30 +908,18 @@ private:
       fs_vars.emplace_back( num_top_vars );
       kitty::create_nth_var( fs_vars[i], i );
       decomp_res.support.push_back( _num_vars + i );
-      /* TODO : Skip trivial cases? */
-
-      /* for debugging */
-      // fmt::print( "[m] A FS function is added. Its support is: " );
-      // for ( auto const& ele : dec.support )
-      // {
-      //   fmt::print( "{} ", ele );
-      // }
-      // fmt::print( "; its function is " );
-      // kitty::print_hex( dec.tt );
-      // fmt::print( "\n" );
     }
-    // fmt::print( "[m] Finished profiling the decomp solution.\n" );
-    
+
     std::vector<kitty::dynamic_truth_table> bs_vars;
     uint32_t offset = 0u;
     std::vector<uint32_t> ss_ind;
-    
+
     for ( uint32_t i = 0u; i < _decomp_bs.size(); ++i )
     {
       decomp_result const& decomp_res_i = _decomp_bs[i];
       bs_vars.emplace_back( num_top_vars );
       kitty::create_nth_var( bs_vars[i], _free_set.size() + i );
-      
+
       if ( decomp_res_i.support.size() == 1u )
       {
         decomp_res.support.push_back( decomp_res_i.support[0] );
@@ -1821,7 +928,7 @@ private:
           bs_vars[i] = ~bs_vars[i];
           _sel_polar |= ( 1 << i );
         }
-        
+
         ss_ind.push_back( i );
         ++offset;
       }
@@ -1830,28 +937,11 @@ private:
         decomp_res.support.push_back( _num_vars + _free_set.size() + i - offset );
       }
     }
-    
+
     for ( auto it = ss_ind.rbegin(); it != ss_ind.rend(); ++it )
     {
       _decomp_bs.erase( _decomp_bs.begin() + *it );
     }
-
-    /* for debugging */
-    // for ( auto i{ 0u }; i < _decomp_bs.size(); ++i )
-    // {
-    //   fmt::print( "[m] Supports of the {}-th BS function are: ", ( i + 1 ) );
-    //   for ( auto sup : _decomp_bs[i].support )
-    //   {
-    //     fmt::print( "node {}; ", sup );
-    //   }
-    //   fmt::print( "\n" );
-    // }
-    // fmt::print( "[m] Supports of the top MUX are: " );
-    // for ( auto sup : decomp_res.support )
-    // {
-    //   fmt::print( "node {}; ", sup );
-    // }
-    // fmt::print( "\n" );
 
     kitty::dynamic_truth_table tt( num_top_vars );
     if ( comput_mux )
@@ -1876,7 +966,7 @@ private:
     }
     else
     {
-      /* Derive the encodings */
+      /* derive the encodings */
       _encodings.clear();
       _encodings.resize( _free_set.size() );
       for ( auto i{ 0u }; i < fs_vars.size(); ++i )
@@ -1899,18 +989,10 @@ private:
           }
         }
         tt |= fs_tt;
-        /* for debugging */
-        // if ( num_top_vars <= 9u )
-        // {
-        //   fmt::print( "[m] After considering the {}-th FS function, the TT is ", ( i + 1 ) );
-        //   kitty::print_hex( tt );
-        //   fmt::print( "\n" );
-        // }
       }
     }
     decomp_res.tt = tt;
     _decomp_bs.push_back( decomp_res );
-    // fmt::print( "[m] Added a top function whose support size is {} ( FS: {} ( #FS vars : {} ); BS: {} ( #BS vars : {} ) )\n", decomp_res.support.size(), _decomp_fs.size(), _free_set_size, ( _decomp_bs.size() - 1 ), ( _num_vars - _free_set_size ) );
   }
 
 private:
@@ -1934,5 +1016,4 @@ public:
   uint8_t _sel_polar;
   bool _min_mc_mux{};
 };
-
 } /* namespace mockturtle */
