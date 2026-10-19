@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, csv, hashlib, random, re, shutil, socket, subprocess, sys, time
+import argparse, csv, hashlib, os, random, re, shutil, socket, subprocess, sys, time
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
@@ -221,7 +221,12 @@ def main():
         raise SystemExit(f"No Bristol circuits found in {circuits_dir}")
 
     fieldnames = list(RunMetrics.__annotations__.keys())
-    write_header = not results_csv.exists()
+    write_header = not results_csv.exists() or results_csv.stat().st_size == 0
+    if not write_header:
+        with results_csv.open("r", newline="", encoding="utf-8") as f:
+            existing = next(csv.reader(f), [])
+        if existing != fieldnames:
+            raise SystemExit(f"{results_csv} was written with a different set of columns; move it away or pass another --results-csv")
 
     with results_csv.open("a", newline="", encoding="utf-8") as csvf:
         writer = csv.DictWriter(csvf, fieldnames=fieldnames)
@@ -246,7 +251,7 @@ def main():
                 base_benchmark, variant = split_benchmark_variant(info.name)
                 row = RunMetrics(info.name, base_benchmark, variant, 0, -1, False, False, compile_rc, -1, -1, compile_secs, 0.0,
                                  None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-                                 "", "", str(compile_log), "", "")
+                                 "", "", os.path.relpath(compile_log, mp_spdz), "", "")
                 writer.writerow(asdict(row)); csvf.flush()
                 if not args.keep_generated:
                     try: mpc_path.unlink()
@@ -291,8 +296,8 @@ def main():
                     and_prepare_timer=p0["and_prepare_timer"], and_wait_timer=p0["and_wait_timer"],
                     xor_time=p0["xor_time"], vm_rounds=vm_rounds, ot_comm_time_sum=ot_comm_sum,
                     ot_matrix_time_sum=ot_matrix_sum, lower_level_lines_p0=extract_lower_level_lines(p0_text),
-                    lower_level_lines_p1=extract_lower_level_lines(p1_text), compile_log=str(compile_log),
-                    p0_log=str(p0_log), p1_log=str(p1_log)
+                    lower_level_lines_p1=extract_lower_level_lines(p1_text), compile_log=os.path.relpath(compile_log, mp_spdz),
+                    p0_log=os.path.relpath(p0_log, mp_spdz), p1_log=os.path.relpath(p1_log, mp_spdz)
                 )
                 writer.writerow(asdict(row)); csvf.flush()
 
